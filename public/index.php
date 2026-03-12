@@ -1,14 +1,30 @@
 <?php
 // public/index.php
 
+// 1. LIGAR O RADAR DE ERROS (Apenas para a fase de homologação)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Inicia a sessão de forma segura
 session_start();
 
-// Autoloader simples
+// 2. AUTOLOADER INTELIGENTE (Resolve o problema do Linux)
 spl_autoload_register(function ($class_name) {
-    $file = __DIR__ . '/../' . str_replace('\\', '/', $class_name) . '.php';
+    $path = str_replace('\\', '/', $class_name);
+    
+    // Força o prefixo 'App/' a virar 'app/' (minúsculo) para bater com a pasta
+    if (strpos($path, 'App/') === 0) {
+        $path = 'app/' . substr($path, 4);
+    }
+    
+    $file = __DIR__ . '/../' . $path . '.php';
+    
     if (file_exists($file)) {
         require $file;
+    } else {
+        // Se não achar o ficheiro, avisa na tela para não dar Erro 500 cego
+        die("Erro Tático: O ficheiro da classe não foi encontrado no caminho: " . $file);
     }
 });
 
