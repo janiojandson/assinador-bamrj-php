@@ -1,0 +1,7 @@
+{
+  "name": "marinha/assinador-bamrj",
+  "description": "Sistema de Assinatura Offline/Restrito",
+  "require": {
+    "php": "^8.2"
+  }
+}
