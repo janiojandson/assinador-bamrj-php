@@ -42,6 +42,11 @@ switch ($route) {
         $controller = new \App\Controllers\AuthController();
         $controller->login();
         break;
+    
+    case '/setup-password':
+        $controller = new \App\Controllers\SetupPasswordController();
+        $controller->index();
+        break;
         
     case '/dashboard':
         $controller = new \App\Controllers\MainController();
