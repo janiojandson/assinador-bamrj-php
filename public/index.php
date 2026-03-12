@@ -1,26 +1,26 @@
 <?php
+// public/index.php
+
 // Inicia a sessão de forma segura
 session_start();
 
-// Autoloader simples (já que não temos Composer)
+// Autoloader simples
 spl_autoload_register(function ($class_name) {
-    // Converte App\Controllers\MainController para app/Controllers/MainController.php
     $file = __DIR__ . '/../' . str_replace('\\', '/', $class_name) . '.php';
     if (file_exists($file)) {
         require $file;
     }
 });
 
-// Captura a rota (ex: /login, /dashboard)
-$request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$script_name = dirname($_SERVER['SCRIPT_NAME']);
-$route = str_replace($script_name, '', $request_uri);
+// Captura a rota diretamente e de forma limpa
+$route = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// Força o dashboard se acederem à raiz
 if ($route == '/' || $route == '') {
     $route = '/dashboard';
 }
 
-// Roteamento Básico
+// Roteamento Blindado
 switch ($route) {
     case '/login':
         $controller = new \App\Controllers\AuthController();
@@ -39,7 +39,11 @@ switch ($route) {
         
     default:
         http_response_code(404);
-        echo "404 - Página não encontrada.";
+        echo "<div style='font-family: Arial; padding: 50px; text-align: center;'>";
+        echo "<h1>🚨 404 - Rota não encontrada</h1>";
+        echo "<p>O sistema tentou aceder a: <strong>" . htmlspecialchars($route) . "</strong></p>";
+        echo "<a href='/login'>Voltar para o Início</a>";
+        echo "</div>";
         break;
 }
 ?>
