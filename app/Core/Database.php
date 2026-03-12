@@ -9,22 +9,25 @@ class Database {
 
     public static function getConnection() {
         if (self::$instance === null) {
-            require_once __DIR__ . '/../../config/config.php';
-            
+            // No Railway, as variáveis virão do ambiente automaticamente
+            $host = getenv('PGHOST');
+            $db   = getenv('PGDATABASE');
+            $user = getenv('PGUSER');
+            $pass = getenv('PGPASSWORD');
+            $port = getenv('PGPORT');
+
+            $dsn = "pgsql:host=$host;port=$port;dbname=$db";
+
             try {
-                // Ligação nativa ao PostgreSQL
-                $dsn = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME;
-                self::$instance = new PDO($dsn, DB_USER, DB_PASS, [
-                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false, // Segurança contra SQL Injection
+                self::$instance = new PDO($dsn, $user, $pass, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
                 ]);
             } catch (PDOException $e) {
-                // Em produção, deve-se registar o erro num ficheiro de log, não exibir no ecrã
-                die("Erro de Ligação à Base de Dados. Contacte o Administrador.");
+                error_log("Erro de Conexão: " . $e->getMessage());
+                die("Falha na comunicação com a Base de Dados Militar.");
             }
         }
         return self::$instance;
     }
 }
-?>
