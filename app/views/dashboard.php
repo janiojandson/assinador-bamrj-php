@@ -14,15 +14,16 @@ $inbox_count = $dados['inbox_count'];
 ?>
 
 <style>
-/* 🚨 SIRENE VISUAL RADICAL */
-@keyframes pisca-sirene {
-    0%   { background-color: #ffcc00; transform: scale(1); border-color: transparent; }
-    50%  { background-color: #dc3545; transform: scale(1.02); border-color: #fff; color: white; box-shadow: 0 0 20px #dc3545; }
-    100% { background-color: #ffcc00; transform: scale(1); border-color: transparent; }
+/* 🌟 ALERTA VISUAL SUTIL E EDUCADO */
+@keyframes pulso-suave {
+    0%   { background-color: #ffcc00; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    50%  { background-color: #ffe066; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.6); }
+    100% { background-color: #ffcc00; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 }
 .alerta-piscando {
     display: block !important;
-    animation: pisca-sirene 1s infinite !important;
+    animation: pulso-suave 2.5s infinite ease-in-out !important;
+    border: 1px solid #e6b800 !important;
 }
 </style>
 
