@@ -5,93 +5,145 @@ use App\Core\Database;
 use PDO;
 
 class DocumentController {
-    /**
-     * Recupera os documentos de acordo com o perfil do militar logado.
-     */
-    public function getDashboardData() {
-        $db = Database::getConnection();
-        $role = $_SESSION['role'];
-        $is_sub = $_SESSION['is_substitute'] ?? false;
-        
-        $inbox_statuses = [];
-        
-        if ($role === 'Operador') {
-            $stmt = $db->prepare("SELECT * FROM documents WHERE status NOT IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado') ORDER BY is_priority DESC, created_at DESC");
-            $stmt->execute();
-            return $stmt->fetchAll();
+
+    private function checkOperador() {
+        if (($_SESSION['role'] ?? '') !== 'Operador') {
+            http_response_code(403);
+            die("Acesso Negado: Apenas Operadores podem manipular documentos de base.");
         }
-
-        if ($role === 'Enc_Financas' || $role === 'Ajudante_Encarregado') {
-            $inbox_statuses = ['Caixa de Entrada - Enc. Finanças'];
-        } elseif ($role === 'Chefe_Departamento') {
-            $inbox_statuses = ['Caixa de Entrada - Chefe'];
-            if ($is_sub) $inbox_statuses[] = 'Caixa de Entrada - Vice-Diretor';
-        } elseif ($role === 'Vice_Diretor') {
-            $inbox_statuses = ['Caixa de Entrada - Vice-Diretor'];
-            if ($is_sub) $inbox_statuses[] = 'Caixa de Entrada - Diretor';
-        } elseif ($role === 'Diretor') {
-            $inbox_statuses = ['Caixa de Entrada - Diretor'];
-        }
-
-        if (empty($inbox_statuses)) return [];
-
-        $inQuery = implode(',', array_fill(0, count($inbox_statuses), '?'));
-        $stmt = $db->prepare("SELECT * FROM documents WHERE status IN ($inQuery) ORDER BY is_priority DESC, created_at DESC");
-        $stmt->execute($inbox_statuses);
-        return $stmt->fetchAll();
     }
 
-    /**
-     * Processa a aprovação ou rejeição de um documento e registra no histórico.
-     */
-    public function processAction($docId, $action, $observation) {
-        $db = Database::getConnection();
-        $role = $_SESSION['role'];
-        $is_sub = $_SESSION['is_substitute'] ?? false;
-        $username = $_SESSION['username'];
+    public function uploadProcess() {
+        $this->checkOperador();
 
-        $stmt = $db->prepare("SELECT status, current_observation FROM documents WHERE id = ?");
-        $stmt->execute([$docId]);
-        $doc = $stmt->fetch();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = Database::getConnection();
+            
+            $protocol = $_POST['protocol'] ?? '';
+            $name = $_POST['process_name'] ?? '';
+            $cpf_cnpj = preg_replace('/\D/', '', $_POST['cpf_cnpj'] ?? '');
+            $solemp = preg_replace('/\D/', '', $_POST['solemp'] ?? '');
+            $is_priority = isset($_POST['priority']) ? 1 : 0;
+            $obs = $_POST['observation'] ?? '';
+            $uploader_name = $_SESSION['username'];
+            $status = 'Caixa de Entrada - Enc. Finanças';
 
-        if (!$doc) return "Erro: Processo não encontrado.";
+            $ano_atual = date('Y');
+            
+            // 1. Criação do Diretório Físico (Como no Linux original)
+            $upload_dir = __DIR__ . "/../../public/uploads/{$ano_atual}/{$protocol}";
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
 
-        $current_status = $doc['status'];
-        $new_status = $current_status;
+            try {
+                $db->beginTransaction();
 
-        // Regra de transição de status militar
-        if ($action === 'rejeitar') {
-            $new_status = 'Devolvido - Operador';
-        } elseif ($action === 'aprovar') {
-            if ($current_status === 'Caixa de Entrada - Enc. Finanças') {
-                $new_status = 'Caixa de Entrada - Chefe';
-            } elseif ($current_status === 'Caixa de Entrada - Chefe') {
-                $new_status = ($is_sub && $role === 'Chefe_Departamento') ? 'Caixa de Entrada - Diretor' : 'Caixa de Entrada - Vice-Diretor';
-            } elseif ($current_status === 'Caixa de Entrada - Vice-Diretor') {
-                $new_status = ($is_sub && $role === 'Vice_Diretor') ? 'Aguardando Empenho - Operador' : 'Caixa de Entrada - Diretor';
-            } elseif ($current_status === 'Caixa de Entrada - Diretor') {
-                $new_status = 'Aguardando Empenho - Operador';
+                // 2. Insere o Documento Principal
+                $sql = "INSERT INTO documents (protocol, name, cpf_cnpj, solemp, status, is_priority, current_observation, uploader_name) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+                $stmt = $db->prepare($sql);
+                $obs_formatada = "[Início] " . $obs;
+                $stmt->execute([$protocol, $name, $cpf_cnpj, $solemp, $status, $is_priority, $obs_formatada, $uploader_name]);
+                $doc_id = $stmt->fetchColumn();
+
+                // 3. Lógica para Múltiplos Arquivos (Minutas e Anexos)
+                $this->processarArquivos('minutas', 'Minuta', $doc_id, $ano_atual, $protocol, $upload_dir, $db);
+                $this->processarArquivos('anexos', 'Anexo', $doc_id, $ano_atual, $protocol, $upload_dir, $db);
+
+                $db->commit();
+                header("Location: /index");
+                exit();
+            } catch (\Exception $e) {
+                $db->rollBack();
+                die("Erro Crítico no Motor de Arquivos: " . $e->getMessage());
             }
         }
+    }
 
-        $db->beginTransaction();
-        try {
-            $timestamp = date('d/m H:i');
-            $cargo = ($is_sub) ? "$role (SUBSTITUTO)" : $role;
-            $new_obs = $doc['current_observation'] . "\n[$timestamp - $cargo]: $observation";
+    private function processarArquivos($inputName, $fileType, $docId, $ano, $protocol, $dir, $db) {
+        if (!empty($_FILES[$inputName]['name'][0])) {
+            $total = count($_FILES[$inputName]['name']);
+            for ($i = 0; $i < $total; $i++) {
+                $tmp_name = $_FILES[$inputName]['tmp_name'][$i];
+                $name = basename($_FILES[$inputName]['name'][$i]);
+                
+                // Limpeza básica do nome do arquivo
+                $name = preg_replace("/[^a-zA-Z0-9.-]/", "_", $name);
+                
+                $destination = "{$dir}/{$name}";
+                $db_path = "{$ano}/{$protocol}/{$name}"; // Caminho relativo salvo no banco
 
-            $update = $db->prepare("UPDATE documents SET status = ?, current_observation = ? WHERE id = ?");
-            $update->execute([$new_status, $new_obs, $docId]);
+                if (move_uploaded_file($tmp_name, $destination)) {
+                    $stmt = $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, ?)");
+                    $stmt->execute([$docId, $db_path, $fileType]);
+                }
+            }
+        }
+    }
 
-            $event = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, ?, ?)");
-            $event->execute([$docId, $username, strtoupper($action), $observation]);
+    public function cancelProcess() {
+        $this->checkOperador();
+        $id = $_GET['id'] ?? 0;
+        
+        $db = Database::getConnection();
+        $obs = 'Processo cancelado pelo operador.';
+        $timestamp = date('d/m H:i');
+        
+        $stmt = $db->prepare("UPDATE documents SET status = 'Cancelado', current_observation = current_observation || '\n[' || ? || ' - Operador]: ' || ? WHERE id = ?");
+        $stmt->execute([$timestamp, $obs, $id]);
+        
+        // Registra o Evento Histórico
+        $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'CANCELAR', ?)");
+        $stmt->execute([$id, $_SESSION['username'], $obs]);
+        
+        header("Location: /index");
+        exit();
+    }
 
-            $db->commit();
+    public function uploadNE() {
+        $this->checkOperador();
+        $id = $_GET['id'] ?? 0;
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = Database::getConnection();
+            $status_final = $_POST['final_status'] ?? 'Arquivado';
+
+            // Busca o protocolo e a data de criação para achar a pasta certa
+            $stmt = $db->prepare("SELECT protocol, created_at FROM documents WHERE id = ?");
+            $stmt->execute([$id]);
+            $doc = $stmt->fetch();
+
+            if ($doc && !empty($_FILES['nota_empenho']['name'])) {
+                $ano_doc = date('Y', strtotime($doc['created_at']));
+                $protocol = $doc['protocol'];
+                
+                $upload_dir = __DIR__ . "/../../public/uploads/{$ano_doc}/{$protocol}";
+                if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+
+                $tmp_name = $_FILES['nota_empenho']['tmp_name'];
+                $name = preg_replace("/[^a-zA-Z0-9.-]/", "_", basename($_FILES['nota_empenho']['name']));
+                $destination = "{$upload_dir}/{$name}";
+                $db_path = "{$ano_doc}/{$protocol}/{$name}";
+
+                if (move_uploaded_file($tmp_name, $destination)) {
+                    // Atualiza Status e Salva Arquivo
+                    $db->beginTransaction();
+                    
+                    $stmt = $db->prepare("UPDATE documents SET status = ? WHERE id = ?");
+                    $stmt->execute([$status_final, $id]);
+                    
+                    $stmt = $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, 'Nota de Empenho')");
+                    $stmt->execute([$id, $db_path]);
+
+                    $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'ANEXAR_NE', ?)");
+                    $stmt->execute([$id, $_SESSION['username'], "Nota de Empenho ({$status_final}) anexada."]);
+                    
+                    $db->commit();
+                }
+            }
             header("Location: /index");
             exit();
-        } catch (\Exception $e) {
-            $db->rollBack();
-            return "Erro na tramitação: " . $e->getMessage();
         }
     }
 }

@@ -1,7 +1,7 @@
 <?php
 /**
  * FRONT CONTROLLER - ASSINADOR BAMRJ
- * Versão Final Consolidada: Fase 11 (Rotas de Ação e Painel Admin)
+ * Versão Final Consolidada: Fase 12 (Motor de Documentos & Acesso Público)
  * Arquiteto: Correção de Autoload Resiliente (Case Sensitivity Linux/Railway)
  */
 
@@ -120,12 +120,20 @@ switch ($uri) {
         $adminCtrl->deleteUser($_GET['id'] ?? 0);
         break;
 
-    // ---- ROTAS DE DOCUMENTOS (Preparação para a próxima fase) ----
+    // ---- ROTAS DE DOCUMENTOS (Upload, Cancelamento, NE) ----
     case '/upload':
+        $docCtrl = new \App\Controllers\DocumentController();
+        $docCtrl->uploadProcess();
+        break;
+
     case '/cancel':
+        $docCtrl = new \App\Controllers\DocumentController();
+        $docCtrl->cancelProcess();
+        break;
+
     case '/upload_ne':
-        // Blindagem temporária. Se bater aqui, sabemos que o botão funcionou!
-        die("<h1>Em Construção</h1><p>A rota de manipulação de documentos está sendo blindada pelo Arquiteto. Aguarde o próximo pacote de deploy.</p>");
+        $docCtrl = new \App\Controllers\DocumentController();
+        $docCtrl->uploadNE();
         break;
 
     // 💣 DETONADOR TÁTICO: Recriar Banco de Dados
