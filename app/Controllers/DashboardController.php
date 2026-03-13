@@ -3,17 +3,32 @@ namespace App\Controllers;
 
 use App\Core\Database;
 use PDO;
+use Exception;
 
 class DashboardController {
     
-    public function getDashboardData() {
-        $db = Database::getConnection();
+    // 🛡️ Tipagem estrita: Este método NUNCA poderá retornar null
+    public function getDashboardData(): array {
         
-        $role = $_SESSION['role'] ?? null;
-        $is_sub = $_SESSION['is_substitute'] ?? false;
+        // 1. Inicializa o pacote de dados padrão para evitar retornos vazios
+        $data = [
+            'role' => $_SESSION['role'] ?? 'Operador',
+            'is_substitute' => $_SESSION['is_substitute'] ?? false,
+            'users' => [],
+            'documents' => [],
+            'pre_protocol' => '',
+            'inbox_count' => 0
+        ];
+
+        // 2. Proteção contra falhas no Banco de Dados
+        try {
+            $db = Database::getConnection();
+        } catch (Exception $e) {
+            return $data; 
+        }
         
         // Regra: Usuário Comum vai direto para o Arquivo
-        if ($role === 'Usuário Comum') {
+        if ($data['role'] === 'Usuário Comum') {
             header("Location: /arquivo");
             exit();
         }
@@ -22,23 +37,22 @@ class DashboardController {
         $search_query_clean = preg_replace('/\D/', '', $search_query);
         $ano_filtro = $_GET['ano'] ?? date('Y');
 
-        $data = [
-            'role' => $role,
-            'is_substitute' => $is_sub,
-            'users' => [],
-            'documents' => [],
-            'pre_protocol' => '',
-            'inbox_count' => 0
-        ];
-
-        // 1. Visão do Admin
-        if ($role === 'Admin') {
-            $stmt = $db->query("SELECT * FROM users ORDER BY name ASC");
-            $data['users'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            return $data;
+        // 3. VISÃO DO ADMIN
+        if ($data['role'] === 'Admin') {
+            try {
+                // Buscamos apenas o necessário, evitando expor o hash de senhas
+                $stmt = $db->query("SELECT id, name, username, role FROM users ORDER BY name ASC");
+                if ($stmt) {
+                    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $data['users'] = is_array($users) ? $users : [];
+                }
+            } catch (Exception $e) {
+                $data['users'] = [];
+            }
+            return $data; // Retorno garantido do Admin
         }
 
-        // 2. Modo de Pesquisa Ativo
+        // 4. MODO DE PESQUISA ATIVO
         if (!empty($search_query)) {
             $sql = "SELECT * FROM documents 
                     WHERE EXTRACT(YEAR FROM created_at) = ? 
@@ -48,27 +62,26 @@ class DashboardController {
             $like_q = "%{$search_query}%";
             $like_clean = "%{$search_query_clean}%";
             $stmt->execute([$ano_filtro, $like_q, $like_q, $like_clean, $like_clean]);
-            $data['documents'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $docs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data['documents'] = is_array($docs) ? $docs : [];
             return $data;
         }
 
-        // 3. Visão do Operador
-        if ($role === 'Operador') {
+        // 5. VISÃO DO OPERADOR
+        if ($data['role'] === 'Operador') {
             $sql = "SELECT * FROM documents 
                     WHERE status NOT IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado') 
                     ORDER BY is_priority DESC, created_at DESC";
             $stmt = $db->query($sql);
-            $docs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $data['documents'] = $docs;
+            $docs = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            $data['documents'] = is_array($docs) ? $docs : [];
             
-            // Geração de Pré-protocolo UUID
             $date_str = date('Ymd');
             $uuid = strtoupper(substr(uniqid(), 0, 4));
             $data['pre_protocol'] = "BAMRJ-{$date_str}-{$uuid}";
             
-            // Contagem de Inbox Operador
             $inbox_count = 0;
-            foreach($docs as $d) {
+            foreach($data['documents'] as $d) {
                 if (in_array($d['status'], ['Devolvido - Operador', 'Aguardando Empenho - Operador'])) {
                     $inbox_count++;
                 }
@@ -77,17 +90,17 @@ class DashboardController {
             return $data;
         }
 
-        // 4. Visão das Chefias (Workflow de Aprovação)
+        // 6. VISÃO DAS CHEFIAS (Workflow de Aprovação)
         $inbox_statuses = [];
-        if ($role === 'Enc_Financas' || $role === 'Ajudante_Encarregado') {
+        if ($data['role'] === 'Enc_Financas' || $data['role'] === 'Ajudante_Encarregado') {
             $inbox_statuses[] = 'Caixa de Entrada - Enc. Finanças';
-        } elseif ($role === 'Chefe_Departamento') {
+        } elseif ($data['role'] === 'Chefe_Departamento') {
             $inbox_statuses[] = 'Caixa de Entrada - Chefe';
-            if ($is_sub) $inbox_statuses[] = 'Caixa de Entrada - Vice-Diretor';
-        } elseif ($role === 'Vice_Diretor') {
+            if ($data['is_substitute']) $inbox_statuses[] = 'Caixa de Entrada - Vice-Diretor';
+        } elseif ($data['role'] === 'Vice_Diretor') {
             $inbox_statuses[] = 'Caixa de Entrada - Vice-Diretor';
-            if ($is_sub) $inbox_statuses[] = 'Caixa de Entrada - Diretor';
-        } elseif ($role === 'Diretor') {
+            if ($data['is_substitute']) $inbox_statuses[] = 'Caixa de Entrada - Diretor';
+        } elseif ($data['role'] === 'Diretor') {
             $inbox_statuses[] = 'Caixa de Entrada - Diretor';
         }
 
@@ -96,10 +109,12 @@ class DashboardController {
             $sql = "SELECT * FROM documents WHERE status IN ($placeholders) ORDER BY is_priority DESC, created_at ASC";
             $stmt = $db->prepare($sql);
             $stmt->execute($inbox_statuses);
-            $data['documents'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $docs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data['documents'] = is_array($docs) ? $docs : [];
             $data['inbox_count'] = count($data['documents']);
         }
 
-        return $data;
+        // 7. Retorno final (Garantia de saída para qualquer outro cenário)
+        return $data; 
     }
 }
