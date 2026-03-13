@@ -37,7 +37,6 @@ $role = $dados['role'];
             
             <script>
                 document.addEventListener("DOMContentLoaded", async () => {
-                    // Lista de URLs dos PDFs do processo
                     const pdfUrls = [
                         <?php foreach ($files as $f): ?>
                             "/get_pdf?file=<?= urlencode($f['filename']) ?>",
@@ -48,7 +47,6 @@ $role = $dados['role'];
                         const { PDFDocument } = PDFLib;
                         const mergedPdf = await PDFDocument.create();
                         
-                        // Busca e costura página por página num único arquivo
                         for (let url of pdfUrls) {
                             const pdfBytes = await fetch(url).then(res => res.arrayBuffer());
                             const pdf = await PDFDocument.load(pdfBytes);
@@ -56,7 +54,6 @@ $role = $dados['role'];
                             copiedPages.forEach((page) => mergedPdf.addPage(page));
                         }
                         
-                        // Transforma em arquivo virtual e exibe
                         const mergedPdfFile = await mergedPdf.save();
                         const blob = new Blob([mergedPdfFile], { type: 'application/pdf' });
                         const blobUrl = URL.createObjectURL(blob);

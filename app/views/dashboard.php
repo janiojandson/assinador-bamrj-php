@@ -226,7 +226,6 @@ $inbox_count = $dados['inbox_count'];
 <?php endif; ?> 
 
 <script>
-// Lógica de Filtro de Anos
 const selectAno = document.getElementById('filtro-ano-dash');
 const anoAtual = new Date().getFullYear();
 const urlParams = new URLSearchParams(window.location.search);
@@ -240,7 +239,6 @@ for (let ano = 2026; ano <= Math.max(2026, anoAtual); ano++) {
     selectAno.appendChild(opt);
 }
 
-// Manipulação Múltiplos Arquivos Modal
 const dtM = new DataTransfer(), dtA = new DataTransfer();
 function setupFiles(inId, hidId, listId, dt) {
     const inp = document.getElementById(inId), hid = document.getElementById(hidId), list = document.getElementById(listId);
@@ -259,7 +257,6 @@ function renderFiles(list, hid, dt) {
 setupFiles('m-in', 'm-hidden', 'm-list', dtM);
 setupFiles('a-in', 'a-hidden', 'a-list', dtA);
 
-// 📡 RADAR TÁTICO: Verifica novos processos a cada 60 segundos com Anti-Cache
 let currentInboxCount = <?= $inbox_count ?>;
 setInterval(function() {
     fetch('/api/check_inbox?t=' + new Date().getTime())
@@ -272,7 +269,7 @@ setInterval(function() {
             }
         })
         .catch(err => console.error("Falha no radar:", err));
-}, 60000); // 60 segundos
+}, 60000); 
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
