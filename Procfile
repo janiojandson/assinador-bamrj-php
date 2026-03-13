@@ -1,1 +1,1 @@
-web: heroku-php-apache2 public/
+web: php seed.php && heroku-php-apache2 public/
