@@ -106,4 +106,13 @@
     #modal {
         padding: 15px !important;
     }
+
+    /* 🛡️ 7. Conserto do Brasão Cortado no Visualizador (sidebar-right) */
+    .sidebar-right img[alt="BAMRJ"] {
+        max-width: 80px !important;
+        height: auto !important;
+        object-fit: contain;
+        margin: 0 auto 15px auto !important; /* Centraliza a imagem */
+        display: block !important;
+    }
 }
