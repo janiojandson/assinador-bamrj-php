@@ -4,12 +4,12 @@
  * Versão Final Consolidada: Fase 10 (Gestão de Utilizadores Admin)
  */
 
+// 1. Configurações de Erro e Sessão
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-
 session_start();
 
-// Autoload manual: Mapeia o namespace 'App\' para a pasta '../app/'
+// 2. Autoload manual para carregar as Classes do diretório /app
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';
     $base_dir = __DIR__ . '/../app/';
@@ -22,9 +22,10 @@ spl_autoload_register(function ($class) {
     }
 });
 
+// 3. Captura da URL solicitada
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// BLOCO DE ROTEAMENTO
+// 4. MOTOR DE ROTEAMENTO (Substitui o app/routes.py do Python)
 switch ($uri) {
     case '/':
     case '/index':
@@ -107,4 +108,4 @@ switch ($uri) {
         http_response_code(404);
         echo "<h1>404</h1><p>Erro: Rota não encontrada no perímetro do Assinador-BAMRJ.</p>";
         break;
-} // FECHAMENTO CORRETO DO SWITCH
+} // <--- ESTE FECHAMENTO É ESSENCIAL
