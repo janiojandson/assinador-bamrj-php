@@ -13,6 +13,19 @@ $pre_protocol = $dados['pre_protocol'];
 $inbox_count = $dados['inbox_count'];
 ?>
 
+<style>
+/* 🚨 SIRENE VISUAL RADICAL */
+@keyframes pisca-sirene {
+    0%   { background-color: #ffcc00; transform: scale(1); border-color: transparent; }
+    50%  { background-color: #dc3545; transform: scale(1.02); border-color: #fff; color: white; box-shadow: 0 0 20px #dc3545; }
+    100% { background-color: #ffcc00; transform: scale(1); border-color: transparent; }
+}
+.alerta-piscando {
+    display: block !important;
+    animation: pisca-sirene 1s infinite !important;
+}
+</style>
+
 <div id="alerta-novo-doc" style="display: none; background: #ffcc00; color: #002244; padding: 12px; text-align: center; font-weight: bold; margin-bottom: 20px; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="location.reload()">
     🔔 Há novos movimentos na sua caixa de entrada. Clique para atualizar.
 </div>
@@ -246,16 +259,16 @@ function renderFiles(list, hid, dt) {
 setupFiles('m-in', 'm-hidden', 'm-list', dtM);
 setupFiles('a-in', 'a-hidden', 'a-list', dtA);
 
-// 📡 RADAR TÁTICO: Verifica novos processos a cada 60 segundos
+// 📡 RADAR TÁTICO: Verifica novos processos a cada 60 segundos com Anti-Cache
 let currentInboxCount = <?= $inbox_count ?>;
 setInterval(function() {
-    fetch('/api/check_inbox')
+    fetch('/api/check_inbox?t=' + new Date().getTime())
         .then(response => response.json())
         .then(data => {
-            if (data.count > currentInboxCount) {
+            if (data.count !== currentInboxCount) {
                 const alerta = document.getElementById('alerta-novo-doc');
                 alerta.style.display = 'block';
-                alerta.style.border = '2px solid red';
+                alerta.classList.add('alerta-piscando');
             }
         })
         .catch(err => console.error("Falha no radar:", err));

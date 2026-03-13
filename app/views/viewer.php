@@ -81,31 +81,53 @@ $role = $dados['role'];
     <div class="sidebar-right">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <a href="<?= $role === 'Usuário Comum' ? '/arquivo' : '/' ?>" style="color: white; background: #6c757d; text-decoration: none; font-weight: bold; padding: 8px 15px; border-radius: 4px;">⬅️ Voltar</a>
-            <img src="/static/img/brasao_bamrj.png" alt="BAMRJ" style="height: 50px;">
+            
+            <?php if ($role === 'Operador' && in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Cancelado', 'Anulado', 'Reforçado'])): ?>
+                <a href="/edit?id=<?= $doc['id'] ?>" style="background: #ffcc00; color: #002244; text-decoration: none; font-weight: bold; padding: 8px 15px; border-radius: 4px;">✏️ Editar/Reiniciar</a>
+            <?php endif; ?>
         </div>
         
         <h3 style="margin-top:0; color: #002244; border-bottom: 2px solid #eee; padding-bottom: 10px;">Protocolo:<br><span style="color: #d32f2f; font-family: monospace; font-size: 1.2em;"><?= htmlspecialchars($doc['protocol']) ?></span></h3>
         
         <p style="margin: 5px 0;"><b>Assunto:</b><br> <?= htmlspecialchars($doc['name']) ?></p>
+        <p style="margin: 5px 0;"><b>CPF/CNPJ:</b> <?= htmlspecialchars($doc['cpf_cnpj']) ?: '-' ?></p>
         <p style="margin: 5px 0;"><b>SOLEMP:</b> <?= htmlspecialchars($doc['solemp']) ?: '-' ?></p>
         <p style="margin: 5px 0;"><b>Status Atual:</b><br> <span style="background: #004488; color: white; padding: 4px 8px; border-radius: 3px; font-weight:bold; display: inline-block; margin-top: 5px;"><?= htmlspecialchars($doc['status']) ?></span></p>
         
         <hr style="border-top: 1px solid #ddd; margin: 20px 0; width: 100%;">
 
+        <div style="background: #f1f3f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+            <h4 style="margin-top: 0; color: #333; margin-bottom: 15px;"><span style="font-size: 1.2em;">📎</span> Documentos do Processo (<?= count($files) ?>):</h4>
+            
+            <?php foreach ($files as $f): 
+                $tipo = $f['file_type'];
+                $nome = basename($f['filename']);
+                // Sistema de Cores Táticas
+                if ($tipo === 'Nota de Empenho') { $corBorda = '#28a745'; $bg = '#d4edda'; $corBotao = '#28a745'; }
+                elseif ($tipo === 'Minuta') { $corBorda = '#17a2b8'; $bg = '#ffffff'; $corBotao = '#17a2b8'; }
+                else { $corBorda = '#6c757d'; $bg = '#ffffff'; $corBotao = '#6c757d'; }
+            ?>
+                <div style="display: flex; align-items: center; background: <?= $bg ?>; border: 1px solid #ddd; border-left: 4px solid <?= $corBorda ?>; border-radius: 4px; padding: 10px; margin-bottom: 10px; transition: 0.2s;">
+                    <a href="/get_pdf?file=<?= urlencode($f['filename']) ?>&dl=1" style="background: <?= $corBotao ?>; color: white; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border-radius: 4px; text-decoration: none; font-size: 1.2em; margin-right: 12px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Baixar <?= $tipo ?>">⬇️</a>
+                    <div style="overflow: hidden;">
+                        <strong style="color: <?= $corBorda ?>;">[<?= $tipo ?>]</strong><br>
+                        <span style="font-size: 0.85em; color: #555; word-wrap: break-word;"><?= htmlspecialchars($nome) ?></span>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+            <?php if(empty($files)): ?>
+                <p style="color: #666; font-size: 0.9em; text-align: center;">Nenhum documento anexado.</p>
+            <?php endif; ?>
+        </div>
+
         <?php if (in_array($role, ['Enc_Financas', 'Ajudante_Encarregado', 'Chefe_Departamento', 'Vice_Diretor', 'Diretor']) && strpos($doc['status'], 'Caixa de Entrada') !== false): ?>
             <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border: 2px solid #002244; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h4 style="margin-top: 0; color: #002244; margin-bottom: 10px; text-align: center;">✍️ Despacho Tático</h4>
-                
                 <form action="/process_action?id=<?= $doc['id'] ?>" method="POST" id="form-despacho">
                     <textarea name="new_observation" id="obs" required placeholder="Escreva aqui o seu despacho oficial (Campo Obrigatório)..." style="width: 100%; height: 120px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit; font-size: 1em;"></textarea>
-                    
                     <div class="btn-group">
-                        <button type="submit" name="action" value="aprovar" class="btn-aprovar" onclick="return confirm('Confirmar APROVAÇÃO do processo?');">
-                            ✅ Aprovar e Tramitar
-                        </button>
-                        <button type="submit" name="action" value="rejeitar" class="btn-devolver" onclick="return confirm('ATENÇÃO: O processo será REJEITADO e devolvido ao Operador. Deseja prosseguir?');">
-                            ❌ Rejeitar e Devolver
-                        </button>
+                        <button type="submit" name="action" value="aprovar" class="btn-aprovar" onclick="return confirm('Confirmar APROVAÇÃO do processo?');">✅ Aprovar e Tramitar</button>
+                        <button type="submit" name="action" value="rejeitar" class="btn-devolver" onclick="return confirm('ATENÇÃO: O processo será REJEITADO e devolvido ao Operador. Deseja prosseguir?');">❌ Rejeitar e Devolver</button>
                     </div>
                 </form>
             </div>
@@ -118,7 +140,7 @@ $role = $dados['role'];
             </div>
         <?php else: ?>
             <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; text-align: center; margin-top: 20px; border: 1px solid #ffeeba;">
-                🔒 <b>Acesso Restrito:</b> O histórico de tramitação e despachos internos são confidenciais e exclusivos para uso militar.
+                🔒 <b>Acesso Restrito:</b> Histórico confidencial.
             </div>
         <?php endif; ?>
     </div>

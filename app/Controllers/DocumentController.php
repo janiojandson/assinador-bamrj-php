@@ -17,7 +17,6 @@ class DocumentController {
         $this->checkOperador();
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
-            
             $date_str = date('Ymd');
             $random_hash = strtoupper(bin2hex(random_bytes(3))); 
             $protocol = "BAMRJ-{$date_str}-{$random_hash}";
@@ -196,10 +195,13 @@ class DocumentController {
         $file = str_replace('..', '', $file); 
         $path = __DIR__ . '/../../public/uploads/' . ltrim($file, '/');
 
+        $isDownload = isset($_GET['dl']) && $_GET['dl'] == '1';
+        $disposition = $isDownload ? 'attachment' : 'inline';
+
         if (file_exists($path)) {
             while (ob_get_level()) { ob_end_clean(); }
             header('Content-Type: application/pdf');
-            header('Content-Disposition: inline; filename="' . basename($path) . '"');
+            header('Content-Disposition: ' . $disposition . '; filename="' . basename($path) . '"');
             header('Content-Length: ' . filesize($path));
             header('Cache-Control: private, max-age=0, must-revalidate');
             header('Pragma: public');
@@ -211,13 +213,14 @@ class DocumentController {
         }
     }
 
-    // --- MOTOR DE CORREÇÃO ---
+    // 🛡️ REQUISITO ATUALIZADO: Motor de Correção Total (Textos e Arquivados)
     public function editProcess() {
         $this->checkOperador();
         $db = Database::getConnection();
         $id = $_GET['id'] ?? 0;
 
-        $stmt = $db->prepare("SELECT * FROM documents WHERE id = ? AND status = 'Devolvido - Operador'");
+        // Permite "ressuscitar" processos devolvidos, arquivados, cancelados ou anulados
+        $stmt = $db->prepare("SELECT * FROM documents WHERE id = ? AND status IN ('Devolvido - Operador', 'Arquivado', 'Cancelado', 'Anulado', 'Reforçado')");
         $stmt->execute([$id]);
         $doc = $stmt->fetch();
 
@@ -227,8 +230,14 @@ class DocumentController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $obs = trim($_POST['observation'] ?? '');
-            if (empty($obs)) {
-                die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>É OBRIGATÓRIO informar o que foi corrigido no campo de despacho.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
+            
+            // Novos Dados Editados
+            $name = trim($_POST['process_name'] ?? $doc['name']);
+            $cpf_cnpj = preg_replace('/\D/', '', $_POST['cpf_cnpj'] ?? $doc['cpf_cnpj']);
+            $solemp = preg_replace('/\D/', '', $_POST['solemp'] ?? $doc['solemp']);
+
+            if (empty($obs) || empty($name)) {
+                die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>É OBRIGATÓRIO informar o Assunto e o que foi corrigido no campo de despacho.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
             }
 
             $protocol = $doc['protocol'];
@@ -243,11 +252,12 @@ class DocumentController {
                 $this->processarArquivos('anexos', 'Anexo', $id, $ano_doc, $protocol, $upload_dir, $db);
 
                 $timestamp = date('d/m/Y H:i');
-                $current_obs = $doc['current_observation'] . "\n[{$timestamp} - Operador]: CORRIGIDO E REENVIADO - \"{$obs}\"";
-                $novo_status = 'Caixa de Entrada - Enc. Finanças';
+                $current_obs = $doc['current_observation'] . "\n[{$timestamp} - Operador]: PROCESSO EDITADO/REINICIADO - \"{$obs}\"";
+                $novo_status = 'Caixa de Entrada - Enc. Finanças'; // Volta para o início
 
-                $stmt = $db->prepare("UPDATE documents SET status = ?, current_observation = ? WHERE id = ?");
-                $stmt->execute([$novo_status, $current_obs, $id]);
+                // Atualiza TUDO: Nome, CPF, SOLEMP e Status
+                $stmt = $db->prepare("UPDATE documents SET name = ?, cpf_cnpj = ?, solemp = ?, status = ?, current_observation = ? WHERE id = ?");
+                $stmt->execute([$name, $cpf_cnpj, $solemp, $novo_status, $current_obs, $id]);
 
                 $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'EDITAR', ?)");
                 $stmt->execute([$id, $_SESSION['username'], $obs]);
