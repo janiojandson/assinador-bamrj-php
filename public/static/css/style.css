@@ -1,116 +1,102 @@
-/* Estilo Tático - Assinador BAMRJ */
+/* =========================================================
+   CSS TÁTICO GLOBAL - ASSINADOR BAMRJ
+   Arquiteto: Blindagem Responsiva (Mobile First)
+========================================================= */
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0f2f5;
-    margin: 0;
-    color: #333;
-}
-
-/* Header Militar */
-header {
-    background: #00447c; /* Azul Marinha */
-    color: white;
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-/* Tabelas de Processos */
-.container {
-    padding: 20px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-th {
-    background-color: #f8f9fa;
-    color: #00447c;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    padding: 15px;
-    border-bottom: 2px solid #dee2e6;
-}
-
-td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
-}
-
-/* Alertas de Prioridade (Tradução da lógica is_priority) */
-.priority-row {
-    background-color: #fff5f5;
-    border-left: 4px solid #e74c3c;
-}
-
-/* Badges de Status */
-.status-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: bold;
-}
-
-.badge-process {
-    background-color: #00447c;
-    color: white;
-}
-
-/* Formulários de Upload */
-.form-group {
-    margin-bottom: 15px;
-}
-
-input[type="text"], 
-input[type="password"], 
-textarea, 
-select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+* {
     box-sizing: border-box;
 }
 
-.btn-primary {
-    background-color: #00447c;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
+/* Tabelas responsivas (permite rolagem horizontal natural) */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
-.btn-primary:hover {
-    background-color: #00335c;
-}
+/* =========================================================
+   🛡️ REGRAS PARA SMARTPHONES E TABLETS (Abaixo de 768px)
+========================================================= */
+@media screen and (max-width: 768px) {
+    
+    /* 1. Navbar e Header */
+    .navbar {
+        flex-direction: column !important;
+        text-align: center;
+        gap: 15px;
+        padding: 15px !important;
+    }
+    .navbar-logo {
+        flex-direction: column;
+        gap: 5px !important;
+    }
+    .navbar-links {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+    .navbar-links span {
+        margin: 0 !important;
+    }
+    .navbar-links a {
+        margin: 0 !important;
+        width: 100%;
+        text-align: center;
+    }
 
-/* Visualizador PDF */
-.viewer-sidebar {
-    background: #2c3e50;
-    color: #ecf0f1;
-    padding: 15px;
-}
+    /* 2. Containers e Flexboxes do Dashboard/Arquivo */
+    div[style*="display: flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        height: auto !important; /* Libera a altura travada do Visualizador */
+    }
+    
+    /* 3. Formulários (Filtros e Despachos) */
+    form {
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+    form input, form select, form button, form a {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-bottom: 8px !important;
+    }
 
-.file-item {
-    padding: 10px;
-    border-bottom: 1px solid #34495e;
-    transition: 0.3s;
-}
+    /* 4. Visualizador de Processos (viewer.php) */
+    .viewer-container {
+        flex-direction: column !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .pdf-area-left {
+        width: 100% !important;
+        height: 60vh !important; /* Ocupa 60% da tela no celular para o PDF */
+        padding: 10px !important;
+    }
+    .sidebar-right {
+        width: 100% !important;
+        border-left: none !important;
+        border-top: 4px solid #002244 !important;
+        padding: 15px !important;
+        height: auto !important;
+    }
+    iframe {
+        height: 500px !important; /* Evita que o PDF fique gigante no celular */
+    }
 
-.file-item:hover {
-    background: #34495e;
-    cursor: pointer;
+    /* 5. Ajuste de Botões de Ação (Aprovar/Rejeitar) */
+    .btn-group {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    /* 6. Textos e Tabelas */
+    h2, h3 { font-size: 1.2em !important; text-align: center; }
+    td, th { padding: 8px !important; font-size: 0.9em; }
+    
+    /* Modal de Upload Mobile */
+    #modal {
+        padding: 15px !important;
+    }
 }
