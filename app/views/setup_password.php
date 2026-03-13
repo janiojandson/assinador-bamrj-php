@@ -1,72 +1,52 @@
 <?php
-// Lógica de Processamento
-$error = null;
-$success = null;
+$page_title = 'Configuração de Senha - Assinador BAMRJ';
+$hide_navbar = true; // Oculta o menu para focar na troca de senha
+require __DIR__ . '/partials/header.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $new_password = $_POST['new_password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
-
-    if (strlen($new_password) < 6) {
-        $error = "A nova senha deve ter pelo menos 6 caracteres.";
-    } elseif ($new_password !== $confirm_password) {
-        $error = "As senhas não coincidem.";
-    } else {
-        // Chamada ao Model que criámos na Fase 2
-        if (\App\Models\User::updatePassword($_SESSION['user_id'], $new_password)) {
-            $success = "Senha atualizada com sucesso! Redirecionando...";
-            // Atualiza a sessão para refletir que não precisa mais mudar a senha
-            $_SESSION['must_change_password'] = false;
-            header("Refresh: 2; url=/index");
-        } else {
-            $error = "Erro ao atualizar a senha no banco de dados.";
-        }
-    }
-}
+// Instancia o AuthController para processar a troca de senha
+$auth = new \App\Controllers\AuthController();
+// Tenta rodar a função de troca (se o seu método tiver outro nome, ajuste aqui, ex: changePassword)
+$error = method_exists($auth, 'setupPassword') ? $auth->setupPassword() : ''; 
 ?>
 
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Configurar Senha - BAMRJ</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body style="background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 20px;">
     
-    <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/static/img/brasao_bamrj.png" alt="BAMRJ" style="width: 80px;">
-            <h2 style="color: #00447c;">Primeiro Acesso</h2>
-            <p style="font-size: 0.9em; color: #666;">Por razões de segurança militar, deve alterar a sua senha inicial.</p>
-        </div>
-
+    <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 100%; max-width: 450px; text-align: center; border-top: 5px solid #ffcc00;">
+        
+        <img src="/static/img/brasao_bamrj.png" alt="BAMRJ" style="width: 90px; margin-bottom: 15px;">
+        
+        <h2 style="color: #002244; margin-top: 0; margin-bottom: 5px;">Ação Obrigatória</h2>
+        <p style="color: #666; font-size: 0.95em; margin-bottom: 25px; line-height: 1.5;">
+            Por motivos de segurança, o senhor(a) precisa cadastrar uma <b>Nova Senha Pessoal</b> antes de acessar o Assinador Eletrônico.
+        </p>
+        
         <?php if ($error): ?>
-            <div style="background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.85em;">
-                <?php echo htmlspecialchars($error); ?>
+            <div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 4px; border: 1px solid #f5c6cb; margin-bottom: 20px; font-weight: bold; font-size: 0.9em;">
+                ⚠️ <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>
 
-        <?php if ($success): ?>
-            <div style="background: #dcfce7; color: #15803d; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.85em;">
-                <?php echo htmlspecialchars($success); ?>
-            </div>
-        <?php endif; ?>
-
-        <form method="POST">
-            <div class="form-group">
-                <label>Nova Senha:</label>
-                <input type="password" name="new_password" required minlength="6" autofocus>
-            </div>
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Confirmar Nova Senha:</label>
-                <input type="password" name="confirm_password" required minlength="6">
-            </div>
-            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">
-                ATUALIZAR SENHA
+        <form method="POST" style="text-align: left;">
+            <label style="color: #002244; font-weight: bold; font-size: 0.9em; display: block; margin-bottom: 8px;">🔑 Nova Senha:</label>
+            <input type="password" name="new_password" required placeholder="Digite a nova senha"
+                   style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; background: #f8f9fa;">
+            
+            <label style="color: #002244; font-weight: bold; font-size: 0.9em; display: block; margin-bottom: 8px;">🔁 Confirme a Nova Senha:</label>
+            <input type="password" name="confirm_password" required placeholder="Repita a nova senha"
+                   style="width: 100%; padding: 12px; margin-bottom: 25px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; background: #f8f9fa;">
+            
+            <button type="submit" style="width: 100%; padding: 14px; background-color: #002244; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1.1em; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                💾 SALVAR E ACESSAR O SISTEMA
             </button>
         </form>
+        
+        <div style="margin-top: 25px; font-size: 0.9em;">
+            <a href="/logout" style="color: #dc3545; text-decoration: none; font-weight: bold; padding: 8px 15px; border-radius: 4px; border: 1px solid #dc3545; transition: 0.2s;">
+                🚪 Cancelar e Sair
+            </a>
+        </div>
+        
     </div>
+</div>
 
-</body>
-</html>
+<?php require __DIR__ . '/partials/footer.php'; ?>
