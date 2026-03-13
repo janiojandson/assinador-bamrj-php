@@ -187,14 +187,22 @@ class DocumentController {
         $path = __DIR__ . '/../../public/uploads/' . ltrim($file, '/');
 
         if (file_exists($path)) {
+            // 🛡️ MANOBRA DE LIMPEZA DE BUFFER: Remove qualquer espaço invisível antes de cuspir o PDF
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
             header('Content-Type: application/pdf');
             header('Content-Disposition: inline; filename="' . basename($path) . '"');
             header('Content-Length: ' . filesize($path));
+            header('Cache-Control: private, max-age=0, must-revalidate');
+            header('Pragma: public');
+            
             readfile($path);
             exit();
         } else {
             http_response_code(404);
-            die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ 404 - PDF não encontrado no Servidor</h1><p>Arquivo ausente: " . htmlspecialchars($file) . "</p></div>");
+            die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ 404 - PDF não encontrado no Servidor</h1><p>Arquivo físico ausente: " . htmlspecialchars($file) . "</p></div>");
         }
     }
 }
