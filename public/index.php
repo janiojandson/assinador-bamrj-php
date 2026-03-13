@@ -51,16 +51,17 @@ switch ($uri) {
     case '/admin/edit_user': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->editUser(); break;
     case '/admin/delete': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->deleteUser($_GET['id'] ?? 0); break;
 
-    // ---- DOCUMENTOS ----
+    // ---- DOCUMENTOS E MANIPULAÇÃO ----
     case '/upload': $docCtrl = new \App\Controllers\DocumentController(); $docCtrl->uploadProcess(); break;
     case '/cancel': $docCtrl = new \App\Controllers\DocumentController(); $docCtrl->cancelProcess(); break;
     case '/upload_ne': $docCtrl = new \App\Controllers\DocumentController(); $docCtrl->uploadNE(); break;
     
-    // 💥 NOVAS ROTAS DE AÇÃO
+    // 💥 NOVAS ROTAS DE AÇÃO E EDIÇÃO
     case '/process_action': $docCtrl = new \App\Controllers\DocumentController(); $docCtrl->processAction(); break;
     case '/get_pdf': $docCtrl = new \App\Controllers\DocumentController(); $docCtrl->getPdf(); break;
+    case '/edit': $docCtrl = new \App\Controllers\DocumentController(); $docCtrl->editProcess(); break;
 
-    // 📡 ROTA DO RADAR (Retorna a quantidade de processos na caixa de entrada)
+    // 📡 ROTA DO RADAR
     case '/api/check_inbox':
         header('Content-Type: application/json');
         $dashCtrl = new \App\Controllers\DashboardController();

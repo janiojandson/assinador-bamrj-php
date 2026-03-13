@@ -167,7 +167,6 @@ class DocumentController {
         }
     }
 
-    // --- 3. DISTRIBUIDOR DE PDFs (Visualizador Blindado) ---
     public function getViewerData(): array {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $doc_id = $_GET['id'] ?? 0;
@@ -179,7 +178,6 @@ class DocumentController {
         $doc = $stmt->fetch();
         if (!$doc) die("Documento não encontrado na Base de Dados.");
 
-        // 🛡️ REQUISITO: Trava de Segurança. Se for Consulta Pública, só pega a Nota de Empenho.
         if ($role === 'Usuário Comum') {
             $stmt = $db->prepare("SELECT * FROM document_files WHERE document_id = ? AND file_type = 'Nota de Empenho' ORDER BY id ASC");
         } else {
@@ -211,5 +209,62 @@ class DocumentController {
             http_response_code(404);
             die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ 404 - PDF não encontrado no Servidor</h1><p>Arquivo físico ausente: " . htmlspecialchars($file) . "</p></div>");
         }
+    }
+
+    // --- MOTOR DE CORREÇÃO ---
+    public function editProcess() {
+        $this->checkOperador();
+        $db = Database::getConnection();
+        $id = $_GET['id'] ?? 0;
+
+        $stmt = $db->prepare("SELECT * FROM documents WHERE id = ? AND status = 'Devolvido - Operador'");
+        $stmt->execute([$id]);
+        $doc = $stmt->fetch();
+
+        if (!$doc) {
+            die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Acesso Negado</h1><p>Documento não encontrado ou não está disponível para correção.</p><a href='/' style='color:white;'>⬅️ Voltar ao Dashboard</a></div>");
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $obs = trim($_POST['observation'] ?? '');
+            if (empty($obs)) {
+                die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>É OBRIGATÓRIO informar o que foi corrigido no campo de despacho.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
+            }
+
+            $protocol = $doc['protocol'];
+            $ano_doc = date('Y', strtotime($doc['created_at']));
+            $upload_dir = __DIR__ . "/../../public/uploads/{$ano_doc}/{$protocol}";
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+
+            try {
+                $db->beginTransaction();
+
+                $this->processarArquivos('minutas', 'Minuta', $id, $ano_doc, $protocol, $upload_dir, $db);
+                $this->processarArquivos('anexos', 'Anexo', $id, $ano_doc, $protocol, $upload_dir, $db);
+
+                $timestamp = date('d/m/Y H:i');
+                $current_obs = $doc['current_observation'] . "\n[{$timestamp} - Operador]: CORRIGIDO E REENVIADO - \"{$obs}\"";
+                $novo_status = 'Caixa de Entrada - Enc. Finanças';
+
+                $stmt = $db->prepare("UPDATE documents SET status = ?, current_observation = ? WHERE id = ?");
+                $stmt->execute([$novo_status, $current_obs, $id]);
+
+                $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'EDITAR', ?)");
+                $stmt->execute([$id, $_SESSION['username'], $obs]);
+
+                $db->commit();
+                header("Location: /index");
+                exit();
+            } catch (\Exception $e) {
+                $db->rollBack();
+                die("Erro Crítico ao Salvar: " . $e->getMessage());
+            }
+        }
+
+        $stmt = $db->prepare("SELECT * FROM document_files WHERE document_id = ? ORDER BY file_type DESC, id ASC");
+        $stmt->execute([$id]);
+        $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        require __DIR__ . '/../views/edit.php';
     }
 }
