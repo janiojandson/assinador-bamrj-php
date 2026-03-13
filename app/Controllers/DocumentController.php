@@ -18,7 +18,12 @@ class DocumentController {
         $this->checkOperador();
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
-            $protocol = $_POST['protocol'] ?? '';
+            
+            // 🛡️ CORREÇÃO DE CONCORRÊNCIA: Protocolo gerado dinamicamente no backend de forma criptográfica
+            $date_str = date('Ymd');
+            $random_hash = strtoupper(bin2hex(random_bytes(3))); // Ex: 8A4F1B (Impossível de colidir)
+            $protocol = "BAMRJ-{$date_str}-{$random_hash}";
+            
             $name = $_POST['process_name'] ?? '';
             $cpf_cnpj = preg_replace('/\D/', '', $_POST['cpf_cnpj'] ?? '');
             $solemp = preg_replace('/\D/', '', $_POST['solemp'] ?? '');
@@ -68,9 +73,9 @@ class DocumentController {
         $db = Database::getConnection();
         $id = $_GET['id'] ?? 0;
         $obs = 'Processo cancelado pelo operador.';
-        $timestamp = date('d/m H:i');
+        $timestamp = date('d/m/Y H:i');
         
-        $stmt = $db->prepare("UPDATE documents SET status = 'Cancelado', current_observation = current_observation || '\n[' || ? || ' - Operador]: ' || ? WHERE id = ?");
+        $stmt = $db->prepare("UPDATE documents SET status = 'Cancelado', current_observation = current_observation || '\n[' || ? || ' - Operador]: CANCELADO - ' || ? WHERE id = ?");
         $stmt->execute([$timestamp, $obs, $id]);
         
         $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'CANCELAR', ?)");
@@ -115,17 +120,20 @@ class DocumentController {
         }
     }
 
-    // --- 2. NOVO: MOTOR DE TRAMITAÇÃO ---
+    // --- 2. NOVO: MOTOR DE TRAMITAÇÃO (Auditoria Reforçada) ---
     public function processAction() {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
             $doc_id = $_GET['id'] ?? 0;
-            
-            // 🛡️ ATUALIZAÇÃO: Lê a ação do botão POST ou da URL (fallback)
             $action = $_POST['action'] ?? ($_GET['action'] ?? '');
             
-            $obs = $_POST['new_observation'] ?? '';
+            // 🛡️ REQUISITO: Despacho agora é obrigatório e limpo
+            $obs = trim($_POST['new_observation'] ?? '');
+            if (empty($obs)) {
+                die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>O despacho é OBRIGATÓRIO para aprovar ou devolver o processo. Volte e preencha o campo.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
+            }
+
             $username = $_SESSION['username'];
             $role = $_SESSION['role'];
             $is_sub = $_SESSION['is_substitute'] ?? false;
@@ -138,15 +146,16 @@ class DocumentController {
             $status = $doc['status'];
             $current_obs = $doc['current_observation'];
 
-            // Registrar Histórico
+            // 🛡️ REQUISITO: Formatação Militar do Histórico
+            $acao_str = ($action === 'aprovar') ? 'APROVADO' : 'REJEITADO';
+            $cargo = $is_sub ? "{$role} (SUBSTITUTO)" : ($role === 'Enc_Financas' ? 'Enc. Finanças' : $role);
+            $timestamp = date('d/m/Y H:i');
+            
+            // Exemplo: [13/03/2026 18:30 - Enc. Finanças]: APROVADO - "Tudo certo."
+            $current_obs .= "\n[{$timestamp} - {$cargo}]: {$acao_str} - \"{$obs}\"";
+
             $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, ?, ?)");
             $stmt->execute([$doc_id, $username, strtoupper($action), $obs]);
-
-            if (!empty($obs)) {
-                $cargo = $is_sub ? "{$role} (SUBSTITUTO)" : ($role === 'Enc_Financas' ? 'Enc. Finanças' : $role);
-                $timestamp = date('d/m H:i');
-                $current_obs .= "\n[{$timestamp} - {$cargo}]: {$obs}";
-            }
 
             // Regra de Negócio: Hierarquia de Aprovação
             if ($action === 'rejeitar') {
@@ -165,7 +174,7 @@ class DocumentController {
         }
     }
 
-    // --- 3. NOVO: DISTRIBUIDOR DE PDFs (Visualizador) ---
+    // --- 3. DISTRIBUIDOR DE PDFs (Visualizador) ---
     public function getViewerData(): array {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $doc_id = $_GET['id'] ?? 0;
@@ -186,21 +195,16 @@ class DocumentController {
     public function getPdf() {
         if (!isset($_SESSION['user_id'])) { header("HTTP/1.1 403 Forbidden"); exit(); }
         $file = $_GET['file'] ?? '';
-        $file = str_replace('..', '', $file); // Trava de Segurança contra Directory Traversal
+        $file = str_replace('..', '', $file); 
         $path = __DIR__ . '/../../public/uploads/' . ltrim($file, '/');
 
         if (file_exists($path)) {
-            // 🛡️ MANOBRA DE LIMPEZA DE BUFFER: Remove qualquer espaço invisível antes de cuspir o PDF
-            while (ob_get_level()) {
-                ob_end_clean();
-            }
-            
+            while (ob_get_level()) { ob_end_clean(); }
             header('Content-Type: application/pdf');
             header('Content-Disposition: inline; filename="' . basename($path) . '"');
             header('Content-Length: ' . filesize($path));
             header('Cache-Control: private, max-age=0, must-revalidate');
             header('Pragma: public');
-            
             readfile($path);
             exit();
         } else {

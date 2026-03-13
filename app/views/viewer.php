@@ -71,14 +71,14 @@ $role = $dados['role'];
                 <h4 style="margin-top: 0; color: #002244; margin-bottom: 10px; text-align: center;">✍️ Despacho Tático</h4>
                 
                 <form action="/process_action?id=<?= $doc['id'] ?>" method="POST" id="form-despacho">
-                    <textarea name="new_observation" id="obs" placeholder="Escreva aqui seu parecer (obrigatório em caso de devolução)..." style="width: 100%; height: 120px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit; font-size: 1em;"></textarea>
+                    <textarea name="new_observation" id="obs" required placeholder="Escreva aqui o seu despacho oficial (Campo Obrigatório)..." style="width: 100%; height: 120px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit; font-size: 1em;"></textarea>
                     
                     <div class="btn-group">
                         <button type="submit" name="action" value="aprovar" class="btn-aprovar" onclick="return confirm('Confirmar APROVAÇÃO do processo?');">
-                            ✅ Aprovar
+                            ✅ Aprovar e Tramitar
                         </button>
-                        <button type="submit" name="action" value="rejeitar" class="btn-devolver" onclick="return validarDevolucao();">
-                            ❌ Devolver
+                        <button type="submit" name="action" value="rejeitar" class="btn-devolver" onclick="return confirm('ATENÇÃO: O processo será REJEITADO e devolvido ao Operador. Deseja prosseguir?');">
+                            ❌ Rejeitar e Devolver
                         </button>
                     </div>
                 </form>
