@@ -1,7 +1,7 @@
 <?php
 /**
  * FRONT CONTROLLER - ASSINADOR BAMRJ
- * Versão Final Consolidada: Fase 13 (Visualizador e Tramitação)
+ * Versão Final Consolidada: Fase 17 (Edição e Radar Ativos)
  */
 
 ini_set('display_errors', 1);
@@ -64,6 +64,12 @@ switch ($uri) {
     // 📡 ROTA DO RADAR
     case '/api/check_inbox':
         header('Content-Type: application/json');
+        
+        // 🛡️ TRAVA ANTI-CACHE: Obriga o navegador a verificar os dados reais no Servidor
+        header('Cache-Control: no-cache, no-store, must-revalidate'); 
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
         $dashCtrl = new \App\Controllers\DashboardController();
         $dados = $dashCtrl->getDashboardData();
         echo json_encode(['count' => $dados['inbox_count'] ?? 0]);
