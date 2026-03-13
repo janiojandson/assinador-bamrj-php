@@ -1,7 +1,10 @@
 {
-    "name": "janiojandson/assinador-bamrj-php",
-    "description": "Sistema de Assinador BAMRJ",
+    "name": "assinador/bamrj",
+    "description": "Assinador BAMRJ - Em PHP Puro",
+    "type": "project",
     "require": {
-        "php": ">=8.2.0"
+        "php": "^8.2",
+        "ext-pdo": "*",
+        "ext-pdo_pgsql": "*"
     }
 }
