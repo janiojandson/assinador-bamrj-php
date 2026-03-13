@@ -2,6 +2,7 @@
 /**
  * FRONT CONTROLLER - ASSINADOR BAMRJ
  * Versão Final Consolidada: Fase 10 (Gestão de Utilizadores Admin)
+ * Arquiteto: Correção de Autoload Resiliente (Case Sensitivity Linux/Railway)
  */
 
 // 1. Configurações de Erro e Sessão
@@ -9,23 +10,39 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 session_start();
 
-// 2. Autoload manual para carregar as Classes do diretório /app
+// 2. Autoload inteligente e resiliente a Case Sensitivity
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';
     $base_dir = __DIR__ . '/../app/';
     $len = strlen($prefix);
+    
     if (strncmp($prefix, $class, $len) !== 0) return;
+    
     $relative_class = substr($class, $len);
-    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
-    if (file_exists($file)) {
-        require $file;
+    $path = str_replace('\\', '/', $relative_class);
+    
+    // Tentativa 1: Caminho exato (Ex: app/Controllers/AuthController.php)
+    $file_strict = $base_dir . $path . '.php';
+    
+    // Tentativa 2: Fallback Tático para Linux (Ex: app/controllers/AuthController.php)
+    $path_parts = explode('/', $path);
+    if (count($path_parts) > 1) {
+        $path_parts[0] = strtolower($path_parts[0]); // Força a pasta raiz (Controllers, Models) para minúsculo
+    }
+    $file_fallback = $base_dir . implode('/', $path_parts) . '.php';
+
+    // Verificação de existência
+    if (file_exists($file_strict)) {
+        require file_strict;
+    } elseif (file_exists($file_fallback)) {
+        require $file_fallback;
     }
 });
 
 // 3. Captura da URL solicitada
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// 4. MOTOR DE ROTEAMENTO (Substitui o app/routes.py do Python)
+// 4. MOTOR DE ROTEAMENTO
 switch ($uri) {
     case '/':
     case '/index':
@@ -108,4 +125,5 @@ switch ($uri) {
         http_response_code(404);
         echo "<h1>404</h1><p>Erro: Rota não encontrada no perímetro do Assinador-BAMRJ.</p>";
         break;
-} // <--- ESTE FECHAMENTO É ESSENCIAL
+}
+?>

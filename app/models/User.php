@@ -11,7 +11,7 @@ class User {
         $stmt->execute([$username]);
         $user = $stmt->fetch();
 
-        // Verifica a senha usando hash seguro
+        // No seed inicial, se a senha for 'admin123', usamos password_verify
         if ($user && password_verify($password, $user['password_hash'])) {
             return $user;
         }
