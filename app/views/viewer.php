@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Visualizador de Processo';
-$hide_navbar = true; // Oculta a barra padrão para aproveitar 100% da tela
+$hide_navbar = true; 
 require __DIR__ . '/partials/header.php';
 
 $docCtrl = new \App\Controllers\DocumentController();
@@ -10,22 +10,15 @@ $doc = $dados['doc'];
 $files = $dados['files'];
 $role = $dados['role'];
 ?>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
 <style>
-    /* Reset local para aproveitar a tela toda */
     .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-    
     .viewer-container { display: flex; height: 100vh; overflow: hidden; background: #e9ecef; }
     
-    /* REQUISITO: PDFs Empilhados (Área Esquerda) */
-    .pdf-area-left { flex: 1; background: #525659; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
-    .pdf-wrapper { margin-bottom: 40px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-    .pdf-title { margin: 0 0 10px 0; color: #002244; font-size: 1.2em; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; font-weight: bold; }
-    iframe { width: 100%; height: 900px; border: 1px solid #ccc; background: white; }
-    
-    /* REQUISITO: Bloco de Ação na Direita */
+    .pdf-area-left { flex: 1; background: #525659; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
     .sidebar-right { width: 420px; background: white; padding: 25px; overflow-y: auto; border-left: 3px solid #002244; display: flex; flex-direction: column; box-shadow: -4px 0 10px rgba(0,0,0,0.1); }
     
-    /* Botões do Bloco Único */
     .btn-group { display: flex; gap: 10px; margin-top: 15px; }
     .btn-group button { flex: 1; padding: 12px; font-size: 1.05em; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; color: white; transition: 0.2s; }
     .btn-aprovar { background-color: #28a745; }
@@ -38,16 +31,49 @@ $role = $dados['role'];
     
     <div class="pdf-area-left">
         <?php if (count($files) > 0): ?>
-            <h3 style="color: white; text-align: center; margin-top: 0;">Role a página para ver todos os documentos ⬇️</h3>
-            <?php foreach ($files as $f): ?>
-                <div class="pdf-wrapper">
-                    <h4 class="pdf-title">📄 <?= htmlspecialchars($f['file_type']) ?> - <?= htmlspecialchars(basename($f['filename'])) ?></h4>
-                    <iframe src="/get_pdf?file=<?= urlencode($f['filename']) ?>#toolbar=1&navpanes=0"></iframe>
-                </div>
-            <?php endforeach; ?>
+            <h3 id="loading-msg" style="color: white; text-align: center; margin-top: 20px;">⚙️ A unificar e decodificar documentos... Aguarde.</h3>
+            
+            <iframe id="single-pdf-viewer" style="width: 100%; height: 95vh; max-width: 1200px; border: none; display: none; background: white; border-radius: 5px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);" src=""></iframe>
+            
+            <script>
+                document.addEventListener("DOMContentLoaded", async () => {
+                    // Lista de URLs dos PDFs do processo
+                    const pdfUrls = [
+                        <?php foreach ($files as $f): ?>
+                            "/get_pdf?file=<?= urlencode($f['filename']) ?>",
+                        <?php endforeach; ?>
+                    ];
+                    
+                    try {
+                        const { PDFDocument } = PDFLib;
+                        const mergedPdf = await PDFDocument.create();
+                        
+                        // Busca e costura página por página num único arquivo
+                        for (let url of pdfUrls) {
+                            const pdfBytes = await fetch(url).then(res => res.arrayBuffer());
+                            const pdf = await PDFDocument.load(pdfBytes);
+                            const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                            copiedPages.forEach((page) => mergedPdf.addPage(page));
+                        }
+                        
+                        // Transforma em arquivo virtual e exibe
+                        const mergedPdfFile = await mergedPdf.save();
+                        const blob = new Blob([mergedPdfFile], { type: 'application/pdf' });
+                        const blobUrl = URL.createObjectURL(blob);
+                        
+                        const viewer = document.getElementById('single-pdf-viewer');
+                        viewer.src = blobUrl + "#toolbar=1&navpanes=0";
+                        viewer.style.display = 'block';
+                        document.getElementById('loading-msg').style.display = 'none';
+                    } catch (err) {
+                        console.error("Erro Tático na Fusão de PDFs: ", err);
+                        document.getElementById('loading-msg').innerText = "⚠️ Ocorreu um erro ao unificar os documentos. Tente recarregar a página.";
+                    }
+                });
+            </script>
         <?php else: ?>
             <div style="color: white; padding: 20px; text-align: center; font-size: 1.2em; margin-top: 50px;">
-                ⚠️ Nenhum documento PDF foi anexado a este processo.
+                ⚠️ Nenhum documento PDF liberado ou anexado a este processo.
             </div>
         <?php endif; ?>
     </div>
@@ -85,23 +111,17 @@ $role = $dados['role'];
             </div>
         <?php endif; ?>
 
-        <h4 style="color: #002244; margin-bottom: 10px;">📜 Histórico da Tramitação</h4>
-        <div style="flex: 1; font-size: 0.85em; background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 4px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; line-height: 1.5; color: #333; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
-            <?= htmlspecialchars($doc['current_observation']) ?>
-        </div>
+        <?php if ($role !== 'Usuário Comum'): ?>
+            <h4 style="color: #002244; margin-bottom: 10px;">📜 Histórico da Tramitação</h4>
+            <div style="flex: 1; font-size: 0.85em; background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 4px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; line-height: 1.5; color: #333; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+                <?= htmlspecialchars($doc['current_observation']) ?>
+            </div>
+        <?php else: ?>
+            <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; text-align: center; margin-top: 20px; border: 1px solid #ffeeba;">
+                🔒 <b>Acesso Restrito:</b> O histórico de tramitação e despachos internos são confidenciais e exclusivos para uso militar.
+            </div>
+        <?php endif; ?>
     </div>
 </div>
-
-<script>
-// Trava de segurança no Frontend para impedir devolução vazia
-function validarDevolucao() {
-    var obs = document.getElementById('obs').value.trim();
-    if (obs === "") {
-        alert("⚠️ REGRA DE NEGÓCIO: É obrigatório justificar no campo de despacho para DEVOLVER o processo ao Operador.");
-        return false;
-    }
-    return confirm("ATENÇÃO: O processo será rejeitado e devolvido ao Operador. Deseja prosseguir?");
-}
-</script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>

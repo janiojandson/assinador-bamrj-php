@@ -245,6 +245,21 @@ function renderFiles(list, hid, dt) {
 }
 setupFiles('m-in', 'm-hidden', 'm-list', dtM);
 setupFiles('a-in', 'a-hidden', 'a-list', dtA);
+
+// 📡 RADAR TÁTICO: Verifica novos processos a cada 60 segundos
+let currentInboxCount = <?= $inbox_count ?>;
+setInterval(function() {
+    fetch('/api/check_inbox')
+        .then(response => response.json())
+        .then(data => {
+            if (data.count > currentInboxCount) {
+                const alerta = document.getElementById('alerta-novo-doc');
+                alerta.style.display = 'block';
+                alerta.style.border = '2px solid red';
+            }
+        })
+        .catch(err => console.error("Falha no radar:", err));
+}, 60000); // 60 segundos
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>

@@ -60,6 +60,15 @@ switch ($uri) {
     case '/process_action': $docCtrl = new \App\Controllers\DocumentController(); $docCtrl->processAction(); break;
     case '/get_pdf': $docCtrl = new \App\Controllers\DocumentController(); $docCtrl->getPdf(); break;
 
+    // 📡 ROTA DO RADAR (Retorna a quantidade de processos na caixa de entrada)
+    case '/api/check_inbox':
+        header('Content-Type: application/json');
+        $dashCtrl = new \App\Controllers\DashboardController();
+        $dados = $dashCtrl->getDashboardData();
+        echo json_encode(['count' => $dados['inbox_count'] ?? 0]);
+        exit();
+        break;
+
     // ---- MANUTENÇÃO ----
     case '/reset_secreto_banco_1234': $adminCtrl = new \App\Controllers\AdminController(); $adminCtrl->resetDatabase(); break;
 

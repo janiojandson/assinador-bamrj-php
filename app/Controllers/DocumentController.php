@@ -13,15 +13,13 @@ class DocumentController {
         }
     }
 
-    // --- 1. UPLOADS E CRIAÇÃO ---
     public function uploadProcess() {
         $this->checkOperador();
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
             
-            // 🛡️ CORREÇÃO DE CONCORRÊNCIA: Protocolo gerado dinamicamente no backend de forma criptográfica
             $date_str = date('Ymd');
-            $random_hash = strtoupper(bin2hex(random_bytes(3))); // Ex: 8A4F1B (Impossível de colidir)
+            $random_hash = strtoupper(bin2hex(random_bytes(3))); 
             $protocol = "BAMRJ-{$date_str}-{$random_hash}";
             
             $name = $_POST['process_name'] ?? '';
@@ -120,7 +118,6 @@ class DocumentController {
         }
     }
 
-    // --- 2. NOVO: MOTOR DE TRAMITAÇÃO (Auditoria Reforçada) ---
     public function processAction() {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -128,7 +125,6 @@ class DocumentController {
             $doc_id = $_GET['id'] ?? 0;
             $action = $_POST['action'] ?? ($_GET['action'] ?? '');
             
-            // 🛡️ REQUISITO: Despacho agora é obrigatório e limpo
             $obs = trim($_POST['new_observation'] ?? '');
             if (empty($obs)) {
                 die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>O despacho é OBRIGATÓRIO para aprovar ou devolver o processo. Volte e preencha o campo.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
@@ -146,18 +142,15 @@ class DocumentController {
             $status = $doc['status'];
             $current_obs = $doc['current_observation'];
 
-            // 🛡️ REQUISITO: Formatação Militar do Histórico
             $acao_str = ($action === 'aprovar') ? 'APROVADO' : 'REJEITADO';
             $cargo = $is_sub ? "{$role} (SUBSTITUTO)" : ($role === 'Enc_Financas' ? 'Enc. Finanças' : $role);
             $timestamp = date('d/m/Y H:i');
             
-            // Exemplo: [13/03/2026 18:30 - Enc. Finanças]: APROVADO - "Tudo certo."
             $current_obs .= "\n[{$timestamp} - {$cargo}]: {$acao_str} - \"{$obs}\"";
 
             $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, ?, ?)");
             $stmt->execute([$doc_id, $username, strtoupper($action), $obs]);
 
-            // Regra de Negócio: Hierarquia de Aprovação
             if ($action === 'rejeitar') {
                 $status = 'Devolvido - Operador';
             } elseif ($action === 'aprovar') {
@@ -174,22 +167,29 @@ class DocumentController {
         }
     }
 
-    // --- 3. DISTRIBUIDOR DE PDFs (Visualizador) ---
+    // --- 3. DISTRIBUIDOR DE PDFs (Visualizador Blindado) ---
     public function getViewerData(): array {
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $doc_id = $_GET['id'] ?? 0;
         $db = Database::getConnection();
+        $role = $_SESSION['role'] ?? '';
         
         $stmt = $db->prepare("SELECT * FROM documents WHERE id = ?");
         $stmt->execute([$doc_id]);
         $doc = $stmt->fetch();
         if (!$doc) die("Documento não encontrado na Base de Dados.");
 
-        $stmt = $db->prepare("SELECT * FROM document_files WHERE document_id = ? ORDER BY file_type DESC, id ASC");
+        // 🛡️ REQUISITO: Trava de Segurança. Se for Consulta Pública, só pega a Nota de Empenho.
+        if ($role === 'Usuário Comum') {
+            $stmt = $db->prepare("SELECT * FROM document_files WHERE document_id = ? AND file_type = 'Nota de Empenho' ORDER BY id ASC");
+        } else {
+            $stmt = $db->prepare("SELECT * FROM document_files WHERE document_id = ? ORDER BY file_type DESC, id ASC");
+        }
+        
         $stmt->execute([$doc_id]);
         $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        return ['doc' => $doc, 'files' => is_array($files) ? $files : [], 'role' => $_SESSION['role']];
+        return ['doc' => $doc, 'files' => is_array($files) ? $files : [], 'role' => $role];
     }
 
     public function getPdf() {
