@@ -4,6 +4,9 @@ namespace App\Controllers;
 use App\Models\User;
 
 class AuthController {
+    /**
+     * Gerencia o login do militar
+     */
     public function login() {
         $error = null;
 
@@ -11,6 +14,7 @@ class AuthController {
             $username = $_POST['username'] ?? '';
             $password = $_POST['password'] ?? '';
 
+            // Tenta autenticar via Model User
             $user = User::authenticate($username, $password);
 
             if ($user) {
@@ -23,7 +27,7 @@ class AuthController {
                 header("Location: /index");
                 exit();
             } else {
-                $error = "Usuário ou senha inválidos.";
+                $error = "Acesso negado: Usuário ou senha inválidos.";
             }
         }
         return $error;
