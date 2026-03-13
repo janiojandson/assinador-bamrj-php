@@ -11,8 +11,18 @@ $documents = $docCtrl->getDashboardData();
     <style>
         .priority-row { background-color: #fff5f5; border-left: 5px solid red; }
         .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 0.8em; font-weight: bold; }
-        .badge-waiting { background: #ffd900; color: #000; }
         .badge-process { background: #00447c; color: #fff; }
+        .btn-new { 
+            display: inline-block; 
+            background: #27ae60; 
+            color: white; 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 4px; 
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .btn-new:hover { background: #219150; }
     </style>
 </head>
 <body>
@@ -27,7 +37,11 @@ $documents = $docCtrl->getDashboardData();
     <main style="padding: 20px;">
         <h2>Caixa de Entrada Tática</h2>
         
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <?php if ($_SESSION['role'] === 'Operador'): ?>
+            <a href="/upload" class="btn-new">+ NOVO PROCESSO</a>
+        <?php endif; ?>
+
+        <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <thead>
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6; text-align: left;">
                     <th style="padding: 12px;">Protocolo</th>
