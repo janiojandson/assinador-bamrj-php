@@ -1,94 +1,88 @@
 <?php
 $docCtrl = new \App\Controllers\DocumentController();
-$db = \App\Core\Database::getConnection();
-$docId = $_GET['id'] ?? 0;
-$error = null;
+$dados = $docCtrl->getViewerData();
 
-// Processamento da decisão do oficial
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    $error = $docCtrl->processAction($docId, $_POST['action'], $_POST['observation']);
-}
-
-$stmt = $db->prepare("SELECT * FROM documents WHERE id = ?");
-$stmt->execute([$docId]);
-$doc = $stmt->fetch();
-
-$stmtFiles = $db->prepare("SELECT * FROM document_files WHERE document_id = ?");
-$stmtFiles->execute([$docId]);
-$files = $stmtFiles->fetchAll();
-
-if (!$doc) die("Processo não encontrado.");
+$doc = $dados['doc'];
+$files = $dados['files'];
+$role = $dados['role'];
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Visualizador - <?php echo htmlspecialchars($doc['protocol']); ?></title>
+    <title>Visualizador - <?= htmlspecialchars($doc['protocol']) ?></title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        body { display: flex; height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        #sidebar { width: 350px; background: #2c3e50; color: white; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
-        #content { flex-grow: 1; background: #95a5a6; position: relative; }
+        .viewer-container { display: flex; height: 100vh; overflow: hidden; font-family: Arial, sans-serif; }
+        .sidebar { width: 350px; background: #f8f9fa; padding: 20px; overflow-y: auto; border-right: 1px solid #ddd; }
+        .pdf-area { flex: 1; background: #525659; display: flex; flex-direction: column; }
+        .file-btn { display: block; width: 100%; text-align: left; padding: 10px; margin-bottom: 5px; background: white; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .file-btn:hover { background: #e9ecef; }
+        .file-btn.active { background: #004488; color: white; border-color: #002244; }
         iframe { width: 100%; height: 100%; border: none; }
-        .file-item { padding: 12px; border-bottom: 1px solid #34495e; cursor: pointer; transition: 0.2s; }
-        .file-item:hover { background: #34495e; }
-        .action-panel { margin-top: 20px; padding-top: 20px; border-top: 2px solid #34495e; }
-        textarea { width: 100%; padding: 10px; border-radius: 4px; border: none; margin-bottom: 10px; resize: vertical; }
-        .history-box { margin-top: 20px; font-size: 0.85em; background: #1a252f; padding: 10px; border-radius: 4px; }
     </style>
 </head>
-<body>
-    <div id="sidebar">
-        <h3><?php echo htmlspecialchars($doc['protocol']); ?></h3>
-        <p><strong>Status Atual:</strong><br><?php echo htmlspecialchars($doc['status']); ?></p>
+<body style="margin:0;">
+
+<div class="viewer-container">
+    <div class="sidebar">
+        <a href="<?= $role === 'Usuário Comum' ? '/arquivo' : '/' ?>" style="display:inline-block; margin-bottom: 15px; color: #004488; text-decoration: none; font-weight: bold; background: #e2e3e5; padding: 5px 10px; border-radius: 4px;">⬅️ Voltar</a>
         
-        <hr style="width:100%; border: 0; border-top: 1px solid #34495e;">
+        <h3 style="margin-top:0; color: #002244;">Protocolo: <?= htmlspecialchars($doc['protocol']) ?></h3>
+        <p><b>Assunto:</b> <?= htmlspecialchars($doc['name']) ?></p>
+        <p><b>Status:</b> <span style="background: #ffcc00; padding: 2px 5px; border-radius: 3px; font-weight:bold;"><?= htmlspecialchars($doc['status']) ?></span></p>
         
-        <h4>Documentos do Processo</h4>
-        <?php foreach ($files as $f): ?>
-            <div class="file-item" onclick="loadPDF('/<?php echo $f['filename']; ?>')">
-                📄 <?php echo basename($f['filename']); ?> <br>
-                <small style="color: #bdc3c7;"><?php echo $f['file_type']; ?></small>
+        <hr style="border-top: 1px solid #ddd; margin: 15px 0;">
+
+        <?php if (in_array($role, ['Enc_Financas', 'Ajudante_Encarregado', 'Chefe_Departamento', 'Vice_Diretor', 'Diretor']) && strpos($doc['status'], 'Caixa de Entrada') !== false): ?>
+            <div style="background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 5px solid #004488;">
+                <form action="/process_action?id=<?= $doc['id'] ?>&action=aprovar" method="POST" style="margin-bottom: 10px;">
+                    <textarea name="new_observation" placeholder="Parecer favorável (opcional)..." style="width: 100%; height: 60px; margin-bottom: 10px; padding: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 3px;"></textarea>
+                    <button type="submit" style="width: 100%; background: #28a745; color: white; border: none; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 4px;">✅ APROVAR E TRAMITAR</button>
+                </form>
+                <form action="/process_action?id=<?= $doc['id'] ?>&action=rejeitar" method="POST" onsubmit="return confirm('ATENÇÃO: Este processo será devolvido ao Operador. Confirma a rejeição?');">
+                    <textarea name="new_observation" placeholder="Motivo da devolução (obrigatório)" required style="width: 100%; height: 60px; margin-bottom: 10px; padding: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 3px;"></textarea>
+                    <button type="submit" style="width: 100%; background: #dc3545; color: white; border: none; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 4px;">❌ DEVOLVER AO OPERADOR</button>
+                </form>
             </div>
-        <?php endforeach; ?>
-
-        <div class="action-panel">
-            <h4>Despacho e Decisão</h4>
-            <form method="POST">
-                <textarea name="observation" rows="4" placeholder="Digite seu despacho aqui..." required></textarea>
-                <div style="display: flex; gap: 10px;">
-                    <button type="submit" name="action" value="aprovar" style="flex:1; background:#27ae60; color:white; border:none; padding:12px; border-radius:4px; cursor:pointer; font-weight:bold;">APROVAR</button>
-                    <button type="submit" name="action" value="rejeitar" style="flex:1; background:#e74c3c; color:white; border:none; padding:12px; border-radius:4px; cursor:pointer; font-weight:bold;">REJEITAR</button>
-                </div>
-            </form>
-            <?php if ($error): ?>
-                <p style="color:#ff7675; margin-top:10px;"><?php echo htmlspecialchars($error); ?></p>
-            <?php endif; ?>
-        </div>
-
-        <div class="history-box">
-            <strong>Histórico de Tramitação:</strong>
-            <div style="white-space: pre-wrap; margin-top: 5px; color: #bdc3c7; font-family: monospace;">
-                <?php echo htmlspecialchars($doc['current_observation']); ?>
-            </div>
-        </div>
-
-        <br>
-        <a href="/index" style="color: #bdc3c7; text-decoration: none; font-size: 0.9em;">← Voltar ao Dashboard</a>
-    </div>
-
-    <div id="content">
-        <iframe id="pdf-frame" src=""></iframe>
-    </div>
-
-    <script>
-        function loadPDF(path) {
-            document.getElementById('pdf-frame').src = path;
-        }
-        // Carrega o primeiro arquivo automaticamente se existir
-        <?php if (!empty($files)): ?>
-            window.onload = () => loadPDF('/<?php echo $files[0]['filename']; ?>');
+            <hr style="border-top: 1px solid #ddd; margin: 15px 0;">
         <?php endif; ?>
-    </script>
+
+        <h4 style="color: #002244;">📄 Documentos do Processo</h4>
+        <div id="file-list">
+            <?php foreach ($files as $index => $f): ?>
+                <button class="file-btn <?= $index === 0 ? 'active' : '' ?>" onclick="loadPdf('<?= htmlspecialchars($f['filename']) ?>', this)">
+                    <b><?= htmlspecialchars($f['file_type']) ?></b><br>
+                    <small style="word-break: break-all; color: #555;"><?= htmlspecialchars(basename($f['filename'])) ?></small>
+                </button>
+            <?php endforeach; ?>
+        </div>
+
+        <hr style="border-top: 1px solid #ddd; margin: 15px 0;">
+
+        <h4 style="color: #002244;">📜 Histórico e Despachos</h4>
+        <div style="font-size: 0.85em; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 4px; max-height: 250px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; line-height: 1.4;">
+            <?= htmlspecialchars($doc['current_observation']) ?>
+        </div>
+    </div>
+
+    <div class="pdf-area">
+        <?php if (count($files) > 0): ?>
+            <iframe id="pdf-frame" src="/get_pdf?file=<?= urlencode($files[0]['filename']) ?>#toolbar=1&navpanes=0&scrollbar=0"></iframe>
+        <?php else: ?>
+            <div style="color: white; padding: 20px; text-align: center; font-size: 1.2em; margin-top: 50px;">
+                ⚠️ Nenhum documento PDF foi anexado a este processo.
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+    function loadPdf(filename, btn) {
+        document.getElementById('pdf-frame').src = '/get_pdf?file=' + encodeURIComponent(filename) + '#toolbar=1&navpanes=0&scrollbar=0';
+        document.querySelectorAll('.file-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+</script>
 </body>
 </html>
