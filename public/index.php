@@ -128,6 +128,12 @@ switch ($uri) {
         die("<h1>Em Construção</h1><p>A rota de manipulação de documentos está sendo blindada pelo Arquiteto. Aguarde o próximo pacote de deploy.</p>");
         break;
 
+    // 💣 DETONADOR TÁTICO: Recriar Banco de Dados
+    case '/reset_secreto_banco_1234':
+        $adminCtrl = new \App\Controllers\AdminController();
+        $adminCtrl->resetDatabase();
+        break;
+
     default:
         http_response_code(404);
         echo "<h1>404</h1><p>Erro: Rota não encontrada no perímetro do Assinador-BAMRJ.</p>";
