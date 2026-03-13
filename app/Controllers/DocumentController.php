@@ -121,7 +121,10 @@ class DocumentController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getConnection();
             $doc_id = $_GET['id'] ?? 0;
-            $action = $_GET['action'] ?? '';
+            
+            // 🛡️ ATUALIZAÇÃO: Lê a ação do botão POST ou da URL (fallback)
+            $action = $_POST['action'] ?? ($_GET['action'] ?? '');
+            
             $obs = $_POST['new_observation'] ?? '';
             $username = $_SESSION['username'];
             $role = $_SESSION['role'];
