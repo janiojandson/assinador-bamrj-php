@@ -37,9 +37,10 @@ $role = $dados['role'];
             
             <script>
                 document.addEventListener("DOMContentLoaded", async () => {
+                    // Lendo diretamente da pasta pública para manter a transparência
                     const pdfUrls = [
                         <?php foreach ($files as $f): ?>
-                            "/get_pdf?file=<?= urlencode($f['filename']) ?>",
+                            "/<?= ltrim($f['filename'], '/') ?>",
                         <?php endforeach; ?>
                     ];
                     
@@ -105,7 +106,7 @@ $role = $dados['role'];
                 else { $corBorda = '#6c757d'; $bg = '#ffffff'; $corBotao = '#6c757d'; }
             ?>
                 <div style="display: flex; align-items: center; background: <?= $bg ?>; border: 1px solid #ddd; border-left: 4px solid <?= $corBorda ?>; border-radius: 4px; padding: 10px; margin-bottom: 10px; transition: 0.2s;">
-                    <a href="/get_pdf?file=<?= urlencode($f['filename']) ?>&dl=1" style="background: <?= $corBotao ?>; color: white; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border-radius: 4px; text-decoration: none; font-size: 1.2em; margin-right: 12px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Baixar <?= $tipo ?>">⬇️</a>
+                    <a href="/<?= ltrim($f['filename'], '/') ?>" download="<?= htmlspecialchars($nome) ?>" style="background: <?= $corBotao ?>; color: white; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border-radius: 4px; text-decoration: none; font-size: 1.2em; margin-right: 12px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Baixar <?= $tipo ?>">⬇️</a>
                     <div style="overflow: hidden;">
                         <strong style="color: <?= $corBorda ?>;">[<?= $tipo ?>]</strong><br>
                         <span style="font-size: 0.85em; color: #555; word-wrap: break-word;"><?= htmlspecialchars($nome) ?></span>

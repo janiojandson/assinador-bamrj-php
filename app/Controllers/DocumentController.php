@@ -30,6 +30,7 @@ class DocumentController {
             $status = 'Caixa de Entrada - Enc. Finanças';
             $ano_atual = date('Y');
             
+            // Diretório Físico de Destino
             $upload_dir = __DIR__ . "/../../public/uploads/{$ano_atual}/{$protocol}";
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
 
@@ -59,7 +60,8 @@ class DocumentController {
                 $name = preg_replace("/[^a-zA-Z0-9.-]/", "_", basename($_FILES[$inputName]['name'][$i]));
                 if (move_uploaded_file($tmp_name, "{$dir}/{$name}")) {
                     $stmt = $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, ?)");
-                    $stmt->execute([$docId, "{$ano}/{$protocol}/{$name}", $fileType]);
+                    // CORREÇÃO: Salvar com o prefixo 'uploads/' para alinhar com a URL pública
+                    $stmt->execute([$docId, "uploads/{$ano}/{$protocol}/{$name}", $fileType]);
                 }
             }
         }
@@ -106,7 +108,8 @@ class DocumentController {
                     $stmt->execute([$status_final, $id]);
                     
                     $stmt = $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, 'Nota de Empenho')");
-                    $stmt->execute([$id, "{$ano_doc}/{$doc['protocol']}/{$name}"]);
+                    // CORREÇÃO: Prefixo uploads/
+                    $stmt->execute([$id, "uploads/{$ano_doc}/{$doc['protocol']}/{$name}"]);
 
                     $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'ANEXAR_NE', ?)");
                     $stmt->execute([$id, $_SESSION['username'], "Nota de Empenho ({$status_final}) anexada."]);
@@ -167,6 +170,7 @@ class DocumentController {
     }
 
     public function getViewerData(): array {
+        // Exceção tática: Permite acesso a Usuário Comum se a intenção é transparência (simulada em /acesso_publico)
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $doc_id = $_GET['id'] ?? 0;
         $db = Database::getConnection();
@@ -190,15 +194,15 @@ class DocumentController {
     }
 
     public function getPdf() {
-        if (!isset($_SESSION['user_id'])) { header("HTTP/1.1 403 Forbidden"); exit(); }
+        // CORREÇÃO: Removido o bloqueio de segurança para respeitar a Transparência LGPD (Público)
         $file = $_GET['file'] ?? '';
-        $file = str_replace('..', '', $file); 
-        $path = __DIR__ . '/../../public/uploads/' . ltrim($file, '/');
+        $file = str_replace(['../', '..\\'], '', $file); 
+        $path = __DIR__ . '/../../public/' . ltrim($file, '/');
 
         $isDownload = isset($_GET['dl']) && $_GET['dl'] == '1';
         $disposition = $isDownload ? 'attachment' : 'inline';
 
-        if (file_exists($path)) {
+        if (file_exists($path) && is_file($path)) {
             while (ob_get_level()) { ob_end_clean(); }
             header('Content-Type: application/pdf');
             header('Content-Disposition: ' . $disposition . '; filename="' . basename($path) . '"');
@@ -275,6 +279,7 @@ class DocumentController {
         $stmt->execute([$id]);
         $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Renderiza a view de edição
         require __DIR__ . '/../views/edit.php';
     }
 }

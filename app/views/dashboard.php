@@ -113,8 +113,11 @@ $inbox_count = $dados['inbox_count'];
 <?php endif; ?>
 
 <?php if ($role === 'Operador'): ?>
-<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+<div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
     <button onclick="document.getElementById('modal').style.display='block'" style="background: #28a745; color: white; padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">➕ Iniciar Novo Processo</button>
+    
+    <a href="/upload_legado" style="background: #f39c12; color: white; padding: 12px 20px; text-decoration: none; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📄 Inserir Acervo Histórico</a>
+    
     <a href="/arquivo" style="background: #6c757d; color: white; padding: 12px 20px; text-decoration: none; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🗄️ Acessar Arquivo Geral</a>
 </div>
 

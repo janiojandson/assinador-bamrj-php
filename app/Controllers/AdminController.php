@@ -76,17 +76,55 @@ class AdminController {
         exit();
     }
 
-    // 💣 ROTA SECRETA: Construtor do Banco de Dados
+    // ==========================================
+    // ⚠️ ZONA DE PERIGO (Lógica de Limpeza)
+    // ==========================================
+
+    // Função auxiliar: Apaga todos os PDFs e Pastas de testes
+    private function clearUploadsFolder() {
+        $dir = __DIR__ . '/../../public/uploads/';
+        if (!is_dir($dir)) return;
+        
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($files as $fileinfo) {
+            $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
+            $todo($fileinfo->getRealPath());
+        }
+    }
+
+    // 🧹 NOVA ROTA: Limpa apenas processos e arquivos (mantém usuários)
+    public function resetDocuments() {
+        $this->checkAdminAccess();
+        $db = Database::getConnection();
+        
+        // TRUNCATE com CASCADE limpa as tabelas de documentos, arquivos e eventos instantaneamente
+        $db->exec("TRUNCATE TABLE documents RESTART IDENTITY CASCADE");
+        
+        // Apaga os PDFs físicos
+        $this->clearUploadsFolder();
+        
+        header("Location: /index");
+        exit();
+    }
+
+    // 💣 ROTA SECRETA: Construtor do Banco de Dados / Factory Reset
     public function resetDatabase() {
+        $this->checkAdminAccess(); // Adicionado para blindar a rota
         $db = Database::getConnection();
         try {
-            // 1. Destruição Tática (Limpa tudo para evitar conflitos)
+            // 1. Destruição Tática (Limpa tudo no DB)
             $db->exec("DROP TABLE IF EXISTS document_files CASCADE;");
             $db->exec("DROP TABLE IF EXISTS events CASCADE;");
             $db->exec("DROP TABLE IF EXISTS documents CASCADE;");
             $db->exec("DROP TABLE IF EXISTS users CASCADE;");
 
-            // 2. Reconstrução Estrutural
+            // 2. Destruição de Arquivos Físicos (NOVO)
+            $this->clearUploadsFolder();
+
+            // 3. Reconstrução Estrutural
             $db->exec("
                 CREATE TABLE users (
                     id SERIAL PRIMARY KEY,
@@ -127,15 +165,18 @@ class AdminController {
                 );
             ");
 
-            // 3. Criação do Master Admin
+            // 4. Criação do Master Admin (Senha admin123)
             $hash = password_hash('admin123', PASSWORD_BCRYPT);
             $stmt = $db->prepare("INSERT INTO users (name, username, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, false)");
             $stmt->execute(['Administrador', 'admin', $hash, 'Admin']);
 
+            // 5. Destrói a sessão atual para forçar login com o novo DB limpo
+            session_destroy();
+
             echo "<div style='background:#28a745;color:white;padding:20px;font-family:sans-serif;'>
-                    <h1>✅ Senhor! Base de dados (Postgres) recriada com sucesso!</h1>
-                    <p>As tabelas foram construídas. A trava de segurança foi inserida. O senhor já pode acessar o sistema normal com <b>admin</b> e <b>admin123</b>.</p>
-                    <a href='/login' style='color:white;text-decoration:underline;font-weight:bold;'>Clique aqui para acessar</a>
+                    <h1>✅ Senhor! Sistema formatado com sucesso!</h1>
+                    <p>As tabelas foram reconstruídas e os ficheiros PDF apagados. O utilizador <b>admin</b> com a senha <b>admin123</b> foi restaurado.</p>
+                    <a href='/login' style='color:white;text-decoration:underline;font-weight:bold;'>Clique aqui para fazer Login</a>
                   </div>";
         } catch (\Exception $e) {
             echo "<div style='background:#dc3545;color:white;padding:20px;font-family:sans-serif;'>
