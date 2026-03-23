@@ -34,6 +34,17 @@ switch ($uri) {
 
     case '/login': require __DIR__ . '/../app/views/login.php'; break;
     
+    case '/toggle_substitute':
+        if (!isset($_SESSION['user_id'])) {
+            header("Location: /login");
+            exit();
+        }
+        // Inverte o estado da substituição (Se for falso vira verdadeiro, e vice-versa)
+        $_SESSION['is_substitute'] = !($_SESSION['is_substitute'] ?? false);
+        header("Location: /index");
+        exit();
+        break;    
+
     case '/sso_sigef':
         if (!isset($_SESSION['user_id'])) {
             header("Location: /login");
