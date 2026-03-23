@@ -8,15 +8,26 @@ class AdminController {
     
     // 🛡️ Trava de Segurança Reutilizável
     private function checkAdminAccess() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
         if (($_SESSION['role'] ?? '') !== 'Admin') {
             http_response_code(403);
             die("Acesso Negado: Privilégios insuficientes no perímetro do Assinador-BAMRJ.");
         }
     }
 
-    public function createUser() {
+    // 📋 Lista utilizadores para desenhar a tabela no admin_users.php
+    public function listUsers() {
         $this->checkAdminAccess();
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT id, name, username, role, must_change_password FROM users ORDER BY name ASC");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // ➕ Cria novo utilizador
+    public function handleCreate() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
+            $this->checkAdminAccess();
             $name = $_POST['name'] ?? '';
             $username = $_POST['username'] ?? '';
             $password = $_POST['password'] ?? '';
@@ -25,21 +36,22 @@ class AdminController {
             $db = Database::getConnection();
             $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");
             $stmt->execute([$username]);
-            if ($stmt->fetch()) die("<h1>Erro Crítico</h1><p>Este utilizador já existe.</p>");
+            if ($stmt->fetch()) die("<h1>Erro Crítico</h1><p>Este utilizador já existe.</p><a href='/admin'>Voltar</a>");
 
             $hash = password_hash($password, PASSWORD_BCRYPT);
             $sql = "INSERT INTO users (name, username, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, TRUE)";
             $stmt = $db->prepare($sql);
             $stmt->execute([$name, $username, $hash, $role]);
 
-            header("Location: /index");
+            header("Location: /admin");
             exit();
         }
     }
 
-    public function editUser() {
-        $this->checkAdminAccess();
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // ✏️ Edita o perfil ou senha do utilizador
+    public function handleEdit() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit') {
+            $this->checkAdminAccess();
             $user_id = $_POST['user_id'] ?? 0;
             $role = $_POST['role'] ?? '';
             $password = $_POST['password'] ?? ''; 
@@ -55,11 +67,12 @@ class AdminController {
                 $stmt = $db->prepare($sql);
                 $stmt->execute([$role, $user_id]);
             }
-            header("Location: /index");
+            header("Location: /admin");
             exit();
         }
     }
 
+    // ❌ Elimina o utilizador
     public function deleteUser($id) {
         $this->checkAdminAccess();
         $db = Database::getConnection();
@@ -68,11 +81,12 @@ class AdminController {
         $stmt->execute([$id]);
         $user = $stmt->fetch();
 
+        // Blindagem para não apagar o próprio admin
         if ($user && $user['username'] !== 'admin') {
             $stmt = $db->prepare("DELETE FROM users WHERE id = ?");
             $stmt->execute([$id]);
         }
-        header("Location: /index");
+        header("Location: /admin");
         exit();
     }
 
@@ -80,7 +94,7 @@ class AdminController {
     // ⚠️ ZONA DE PERIGO (Lógica de Limpeza)
     // ==========================================
 
-    // Função auxiliar: Apaga todos os PDFs e Pastas de testes
+    // Função auxiliar: Apaga todos os PDFs físicos
     private function clearUploadsFolder() {
         $dir = __DIR__ . '/../../public/uploads/';
         if (!is_dir($dir)) return;
@@ -90,38 +104,41 @@ class AdminController {
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($files as $fileinfo) {
+            // Proteção para o repositório git não quebrar
+            if ($fileinfo->getFilename() === '.gitkeep') continue;
+            
             $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
             $todo($fileinfo->getRealPath());
         }
     }
 
-    // 🧹 NOVA ROTA: Limpa apenas processos e arquivos (mantém usuários)
-    public function resetDocuments() {
+    // 🧹 Limpa apenas processos e arquivos (WIPE DADOS)
+    public function resetDocs() {
         $this->checkAdminAccess();
         $db = Database::getConnection();
         
-        // TRUNCATE com CASCADE limpa as tabelas de documentos, arquivos e eventos instantaneamente
+        // TRUNCATE com CASCADE limpa as tabelas de documentos instantaneamente
         $db->exec("TRUNCATE TABLE documents RESTART IDENTITY CASCADE");
         
         // Apaga os PDFs físicos
         $this->clearUploadsFolder();
         
-        header("Location: /index");
+        header("Location: /admin");
         exit();
     }
 
-    // 💣 ROTA SECRETA: Construtor do Banco de Dados / Factory Reset
-    public function resetDatabase() {
-        $this->checkAdminAccess(); // Adicionado para blindar a rota
+    // 💣 Formatação Total do Sistema (FACTORY RESET)
+    public function factoryReset() {
+        $this->checkAdminAccess();
         $db = Database::getConnection();
         try {
-            // 1. Destruição Tática (Limpa tudo no DB)
+            // 1. Destruição Tática
             $db->exec("DROP TABLE IF EXISTS document_files CASCADE;");
             $db->exec("DROP TABLE IF EXISTS events CASCADE;");
             $db->exec("DROP TABLE IF EXISTS documents CASCADE;");
             $db->exec("DROP TABLE IF EXISTS users CASCADE;");
 
-            // 2. Destruição de Arquivos Físicos (NOVO)
+            // 2. Destruição de Arquivos Físicos
             $this->clearUploadsFolder();
 
             // 3. Reconstrução Estrutural
@@ -170,13 +187,17 @@ class AdminController {
             $stmt = $db->prepare("INSERT INTO users (name, username, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, false)");
             $stmt->execute(['Administrador', 'admin', $hash, 'Admin']);
 
-            // 5. Destrói a sessão atual para forçar login com o novo DB limpo
-            session_destroy();
+            // 5. Destrói a sessão atual para forçar login
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_destroy();
+            }
 
-            echo "<div style='background:#28a745;color:white;padding:20px;font-family:sans-serif;'>
+            // Exibe a tela de sucesso da formatação
+            echo "<div style='background:#28a745;color:white;padding:20px;font-family:sans-serif;text-align:center;margin-top:50px;border-radius:8px;max-width:600px;margin-left:auto;margin-right:auto;'>
                     <h1>✅ Senhor! Sistema formatado com sucesso!</h1>
                     <p>As tabelas foram reconstruídas e os ficheiros PDF apagados. O utilizador <b>admin</b> com a senha <b>admin123</b> foi restaurado.</p>
-                    <a href='/login' style='color:white;text-decoration:underline;font-weight:bold;'>Clique aqui para fazer Login</a>
+                    <br>
+                    <a href='/login' style='background:white;color:#28a745;padding:10px 20px;text-decoration:none;font-weight:bold;border-radius:4px;'>Fazer Login</a>
                   </div>";
         } catch (\Exception $e) {
             echo "<div style='background:#dc3545;color:white;padding:20px;font-family:sans-serif;'>

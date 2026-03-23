@@ -123,16 +123,21 @@ switch ($uri) {
         break;
 
     case '/admin/reset_docs':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
+            header("Location: /index");
+            exit();
+        }
         $adminCtrl = new \App\Controllers\AdminController();
-        $adminCtrl->resetDocuments();
+        $adminCtrl->resetDocs();
         break;
 
     case '/admin/factory_reset':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
+            header("Location: /index");
+            exit();
+        }
         $adminCtrl = new \App\Controllers\AdminController();
-        // CORRIGIDO AQUI: A sua função chama-se resetDatabase(), não factoryReset()
-        $adminCtrl->resetDatabase(); 
+        $adminCtrl->factoryReset();
         break;
     
     default:
