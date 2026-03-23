@@ -7,18 +7,34 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         body { background-color: #f4f7f6; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+        
+        /* Barra Superior Padrão SIGEF */
         .navbar { background-color: #002244; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-bottom: 4px solid #ffcc00; }
         .navbar-logo img { height: 45px; background: white; padding: 3px; border-radius: 4px; }
         .navbar-links { display: flex; align-items: center; gap: 15px; }
-        .navbar-links a { color: white; text-decoration: none; font-weight: bold; padding: 8px 12px; border-radius: 4px; transition: 0.3s; display: inline-block; border: 1px solid transparent; }
+        .navbar-links a { color: white; text-decoration: none; font-weight: bold; padding: 8px 12px; border-radius: 4px; transition: 0.3s; display: inline-block; }
         
-        /* Botões dinâmicos */
-        .navbar-links .btn-inicio { border: 1px solid white; background-color: rgba(255,255,255,0.1); }
-        .navbar-links .btn-inicio:hover { background-color: rgba(255,255,255,0.2); }
+        /* Botão Sair Vermelho (Sempre visível) */
         .navbar-links .logout { background-color: #dc3545; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .navbar-links .logout:hover { background-color: #c82333; }
         
         .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        
+        /* 🟢 Estilo do Botão Início (Idêntico à referência SIGEF) */
+        .btn-nav-inicio {
+            background-color: #e9ecef;
+            color: #002244;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid #ced4da;
+            display: inline-block;
+            margin-bottom: 20px; /* Dá espaço para o conteúdo abaixo */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: 0.2s;
+        }
+        .btn-nav-inicio:hover { background-color: #dde2e6; border-color: #b1bbc4; }
     </style>
 </head>
 <body>
@@ -27,7 +43,7 @@
         <div class="navbar-logo" style="display: flex; align-items: center; gap: 15px;">
             <img src="/static/img/brasao_bamrj.png" alt="BAMRJ">
             <h2 style="margin: 0; letter-spacing: 1px; font-size: 1.2em; text-transform: uppercase;">
-                <?= $page_title ?? 'ASSINADOR ELETRÔNICO' ?>
+                ASSINADOR BAMRJ
             </h2>
         </div>
         <div class="navbar-links">
@@ -36,19 +52,15 @@
                     <span style="color: #a1c6ea;">👤 <?= htmlspecialchars($_SESSION['name'] ?? '') ?></span>
                 <?php endif; ?>
                 
-                <?php 
-                // 🧠 MOTOR DINÂMICO DE NAVEGAÇÃO À PROVA DE BALAS
-                // Deteta se é o Dashboard pelo título ou pela Rota
-                $is_dashboard = (isset($page_title) && strpos($page_title, 'Dashboard') !== false) || $_SERVER['REQUEST_URI'] === '/' || $_SERVER['REQUEST_URI'] === '/index';
-
-                if ($is_dashboard): ?>
-                    <a href="/logout" class="logout">Sair do Sistema</a>
-                <?php else: ?>
-                    <a href="/index" class="btn-inicio">🏠 INÍCIO / DASHBOARD</a>
-                <?php endif; ?>
-                
+                <a href="/logout" class="logout">Sair do Sistema</a>
             <?php endif; ?>
         </div>
     </nav>
     <?php endif; ?>
+    
     <div class="container">
+        <?php if (!isset($hide_navbar) || !$hide_navbar): ?>
+        <div>
+            <a href="/index" class="btn-nav-inicio">🏠 Dashboard / Início</a>
+        </div>
+        <?php endif; ?>
