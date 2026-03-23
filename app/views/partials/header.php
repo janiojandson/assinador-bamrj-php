@@ -37,9 +37,11 @@
                 <?php endif; ?>
                 
                 <?php 
-                // 🧠 MOTOR DINÂMICO DE NAVEGAÇÃO
-                $current_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-                if ($current_uri === '/' || $current_uri === '/index'): ?>
+                // 🧠 MOTOR DINÂMICO DE NAVEGAÇÃO À PROVA DE BALAS
+                // Deteta se é o Dashboard pelo título ou pela Rota
+                $is_dashboard = (isset($page_title) && strpos($page_title, 'Dashboard') !== false) || $_SERVER['REQUEST_URI'] === '/' || $_SERVER['REQUEST_URI'] === '/index';
+
+                if ($is_dashboard): ?>
                     <a href="/logout" class="logout">Sair do Sistema</a>
                 <?php else: ?>
                     <a href="/index" class="btn-inicio">🏠 INÍCIO / DASHBOARD</a>
