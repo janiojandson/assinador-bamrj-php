@@ -3,7 +3,14 @@ $page_title = 'BAMRJ | Arquivo Histórico';
 require __DIR__ . '/partials/header.php';
 
 $archiveCtrl = new \App\Controllers\ArchiveController();
-$documents = $archiveCtrl->getArchiveData();
+
+// 🟢 CORREÇÃO APLICADA AQUI: Recebemos o pacote completo do Controller
+$dados_arquivo = $archiveCtrl->getArchiveData();
+
+// 🟢 E extraímos APENAS a lista de documentos para a tabela não quebrar
+$documents = $dados_arquivo['documents'] ?? [];
+
+// 🟢 Recuperamos a role para a blindagem de visualização
 $role = $_SESSION['role'] ?? 'Usuário Comum';
 ?>
 
