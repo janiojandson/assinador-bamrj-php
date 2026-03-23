@@ -33,13 +33,23 @@ $inbox_count = $dados['inbox_count'];
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #004488; flex-wrap: wrap; gap: 15px;">
     <div>
-        <h3 style="margin: 0; color: #002244;">Patente/Perfil: <span style="color: #666;"><?= $role === 'Enc_Financas' ? 'Enc. Finanças' : htmlspecialchars($role) ?></span></h3>
+        <?php 
+        // Formata o nome do perfil visualmente para a tela inicial
+        $role_display = $role;
+        if ($role === 'Gestor_Financeiro') $role_display = 'Gestor Financeiro';
+        if ($role === 'Gestor_Financeiro_Substituto') $role_display = 'Gestor Financeiro Substituto';
+        if ($role === 'Chefe_Departamento') $role_display = 'Chefe de Departamento';
+        if ($role === 'Agente_Fiscal') $role_display = 'Agente Fiscal';
+        if ($role === 'Ordenador_Despesas') $role_display = 'Ordenador de Despesas';
+        ?>
+        <h3 style="margin: 0; color: #002244;">Patente/Perfil: <span style="color: #666;"><?= htmlspecialchars($role_display) ?></span></h3>
+        
         <?php if ($is_substitute): ?>
             <span style="background: #ffcc00; color: black; padding: 2px 8px; border-radius: 3px; font-weight: bold; font-size: 0.8em; display: inline-block; margin-top: 5px;">MODO SUBSTITUTO ATIVO</span>
         <?php endif; ?>
     </div>
     <div style="display: flex; gap: 10px; width: 100%; justify-content: flex-end;">
-        <?php if (in_array($role, ['Chefe_Departamento', 'Vice_Diretor'])): ?>
+        <?php if (in_array($role, ['Chefe_Departamento', 'Agente_Fiscal'])): ?>
             <a href="/toggle_substitute" style="background: #ffcc00; color: #002244; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; text-align: center;">
                 <?= $is_substitute ? '⬅️ Desativar Substituição' : '⚡ Ativar Substituição Superior' ?>
             </a>
@@ -65,11 +75,12 @@ $inbox_count = $dados['inbox_count'];
             <input type="password" name="password" placeholder="Senha Inicial" required style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;">
             <select name="role" required style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;">
                 <option value="Operador">Operador</option>
-                <option value="Enc_Financas">Enc. Finanças</option>
-                <option value="Ajudante_Encarregado">Ajudante do Encarregado</option>
+                <option value="Gestor_Financeiro">Gestor Financeiro</option>
+                <option value="Gestor_Financeiro_Substituto">Gestor Fin. Substituto</option>
                 <option value="Chefe_Departamento">Chefe de Departamento</option>
-                <option value="Vice_Diretor">Vice-Diretor</option>
-                <option value="Diretor">Diretor</option>
+                <option value="Agente_Fiscal">Agente Fiscal</option>
+                <option value="Ordenador_Despesas">Ordenador de Despesas</option>
+                <option value="Admin">Administrador</option>
                 <option value="Usuário Comum">Usuário Comum</option>
             </select>
             <button type="submit" style="background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px;">Salvar</button>
@@ -90,11 +101,11 @@ $inbox_count = $dados['inbox_count'];
                             <select name="role" onchange="this.form.submit()" style="padding: 5px; border-radius: 3px;">
                                 <option value="Admin" <?= $u['role'] == 'Admin' ? 'selected' : '' ?>>Administrador</option>
                                 <option value="Operador" <?= $u['role'] == 'Operador' ? 'selected' : '' ?>>Operador</option>
-                                <option value="Enc_Financas" <?= $u['role'] == 'Enc_Financas' ? 'selected' : '' ?>>Enc. Finanças</option>
-                                <option value="Ajudante_Encarregado" <?= $u['role'] == 'Ajudante_Encarregado' ? 'selected' : '' ?>>Ajudante</option>
+                                <option value="Gestor_Financeiro" <?= $u['role'] == 'Gestor_Financeiro' ? 'selected' : '' ?>>Gestor Financeiro</option>
+                                <option value="Gestor_Financeiro_Substituto" <?= $u['role'] == 'Gestor_Financeiro_Substituto' ? 'selected' : '' ?>>Gestor Fin. Substituto</option>
                                 <option value="Chefe_Departamento" <?= $u['role'] == 'Chefe_Departamento' ? 'selected' : '' ?>>Chefe Depto</option>
-                                <option value="Vice_Diretor" <?= $u['role'] == 'Vice_Diretor' ? 'selected' : '' ?>>Vice-Diretor</option>
-                                <option value="Diretor" <?= $u['role'] == 'Diretor' ? 'selected' : '' ?>>Diretor</option>
+                                <option value="Agente_Fiscal" <?= $u['role'] == 'Agente_Fiscal' ? 'selected' : '' ?>>Agente Fiscal</option>
+                                <option value="Ordenador_Despesas" <?= $u['role'] == 'Ordenador_Despesas' ? 'selected' : '' ?>>Ordenador de Despesas</option>
                                 <option value="Usuário Comum" <?= $u['role'] == 'Usuário Comum' ? 'selected' : '' ?>>Usuário Comum</option>
                             </select>
                         </form>
