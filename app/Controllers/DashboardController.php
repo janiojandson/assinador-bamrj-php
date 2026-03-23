@@ -41,7 +41,7 @@ class DashboardController {
         if ($data['role'] === 'Admin') {
             try {
                 // Buscamos apenas o necessário, evitando expor o hash de senhas
-                $stmt = $db->query("SELECT id, name, username, role FROM users ORDER BY name ASC");
+                $stmt = $db->query("SELECT id, name, username, role, must_change_password FROM users ORDER BY name ASC");
                 if ($stmt) {
                     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     $data['users'] = is_array($users) ? $users : [];
@@ -90,18 +90,27 @@ class DashboardController {
             return $data;
         }
 
-        // 6. VISÃO DAS CHEFIAS (Workflow de Aprovação)
+        // 6. VISÃO DAS CHEFIAS (Workflow de Aprovação Atualizado)
         $inbox_statuses = [];
-        if ($data['role'] === 'Enc_Financas' || $data['role'] === 'Ajudante_Encarregado') {
-            $inbox_statuses[] = 'Caixa de Entrada - Enc. Finanças';
+        
+        // 🟢 CORREÇÃO APLICADA: Novas Roles e Novos Status
+        if ($data['role'] === 'Gestor_Financeiro' || $data['role'] === 'Gestor_Financeiro_Substituto') {
+            $inbox_statuses[] = 'Caixa de Entrada - Gestor Financeiro';
+            
         } elseif ($data['role'] === 'Chefe_Departamento') {
-            $inbox_statuses[] = 'Caixa de Entrada - Chefe';
-            if ($data['is_substitute']) $inbox_statuses[] = 'Caixa de Entrada - Vice-Diretor';
-        } elseif ($data['role'] === 'Vice_Diretor') {
-            $inbox_statuses[] = 'Caixa de Entrada - Vice-Diretor';
-            if ($data['is_substitute']) $inbox_statuses[] = 'Caixa de Entrada - Diretor';
-        } elseif ($data['role'] === 'Diretor') {
-            $inbox_statuses[] = 'Caixa de Entrada - Diretor';
+            $inbox_statuses[] = 'Caixa de Entrada - Chefe de Departamento';
+            if ($data['is_substitute']) {
+                $inbox_statuses[] = 'Caixa de Entrada - Agente Fiscal'; // Puxa processos do Agente Fiscal
+            }
+            
+        } elseif ($data['role'] === 'Agente_Fiscal') {
+            $inbox_statuses[] = 'Caixa de Entrada - Agente Fiscal';
+            if ($data['is_substitute']) {
+                $inbox_statuses[] = 'Caixa de Entrada - Ordenador de Despesas'; // Puxa processos do Ordenador
+            }
+            
+        } elseif ($data['role'] === 'Ordenador_Despesas') {
+            $inbox_statuses[] = 'Caixa de Entrada - Ordenador de Despesas';
         }
 
         if (!empty($inbox_statuses)) {

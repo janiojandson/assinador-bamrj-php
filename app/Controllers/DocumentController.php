@@ -168,12 +168,12 @@ class DocumentController {
             $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, ?, ?)");
             $stmt->execute([$doc_id, $username, strtoupper($action), $obs]);
 
-            // ATUALIZADO (Pontos 3 e 4): Lógica de Rejeição e Aprovação
+            // ATUALIZADO: Lógica de Rejeição e Aprovação
             if ($action === 'rejeitar') {
                 if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto'])) {
-                    $status = 'Devolvido - Operador'; // Volta para o Operador
+                    $status = 'Devolvido - Operador'; 
                 } else {
-                    $status = 'Caixa de Entrada - Gestor Financeiro'; // Chefes e Superiores voltam pro Gestor
+                    $status = 'Caixa de Entrada - Gestor Financeiro'; 
                 }
             } elseif ($action === 'aprovar') {
                 if ($status === 'Caixa de Entrada - Gestor Financeiro') {

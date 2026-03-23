@@ -69,7 +69,8 @@ $inbox_count = $dados['inbox_count'];
     
     <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #ddd;">
         <h4 style="margin-top:0; color: #333;">➕ Cadastrar Novo Utilizador</h4>
-        <form action="/admin/create_user" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <form action="/admin" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="hidden" name="action" value="create">
             <input type="text" name="name" placeholder="Nome Completo" required style="padding: 10px; flex: 1.5; border: 1px solid #ccc; border-radius: 4px;">
             <input type="text" name="username" placeholder="NIP / Login" required style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;">
             <input type="password" name="password" placeholder="Senha Inicial" required style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;">
@@ -96,7 +97,8 @@ $inbox_count = $dados['inbox_count'];
                     <td style="padding: 10px;"><?= htmlspecialchars($u['name']) ?></td>
                     <td style="padding: 10px;"><b><?= htmlspecialchars($u['username']) ?></b></td>
                     <td style="padding: 10px;">
-                        <form action="/admin/edit_user" method="POST" style="display: inline;">
+                        <form action="/admin" method="POST" style="display: inline;">
+                            <input type="hidden" name="action" value="edit">
                             <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                             <select name="role" onchange="this.form.submit()" style="padding: 5px; border-radius: 3px;">
                                 <option value="Admin" <?= $u['role'] == 'Admin' ? 'selected' : '' ?>>Administrador</option>

@@ -35,7 +35,8 @@ class UploadController {
             try {
                 $stmt = $db->prepare("INSERT INTO documents (protocol, name, cpf_cnpj, solemp, is_priority, current_observation, uploader_name, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 $obs_entry = "[Início] $observation";
-                // ATUALIZADO AQUI: Novo Status Inicial
+                
+                // Status Inicial devidamente atualizado para a nova nomenclatura
                 $stmt->execute([$protocol, $process_name, $cpf_cnpj, $solemp, $priority, $obs_entry, $username, 'Caixa de Entrada - Gestor Financeiro']);
                 $docId = $db->lastInsertId();
 
