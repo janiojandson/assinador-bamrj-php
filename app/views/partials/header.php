@@ -30,11 +30,25 @@
             font-weight: bold;
             border: 1px solid #ced4da;
             display: inline-block;
-            margin-bottom: 20px; /* Dá espaço para o conteúdo abaixo */
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             transition: 0.2s;
         }
         .btn-nav-inicio:hover { background-color: #dde2e6; border-color: #b1bbc4; }
+
+        /* 🟢 Estilo do Botão SSO SIGEF */
+        .btn-nav-sigef {
+            background-color: #17a2b8;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid #117a8b;
+            display: inline-block;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: 0.2s;
+        }
+        .btn-nav-sigef:hover { background-color: #138496; border-color: #0c5460; }
     </style>
 </head>
 <body>
@@ -60,7 +74,13 @@
     
     <div class="container">
         <?php if (!isset($hide_navbar) || !$hide_navbar): ?>
-        <div>
+        <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
             <a href="/index" class="btn-nav-inicio">🏠 Dashboard / Início</a>
+            
+            <?php if (isset($_SESSION['user_id']) && ($_SESSION['role'] ?? '') !== 'Usuário Comum'): ?>
+                <a href="/sso_sigef" target="_blank" class="btn-nav-sigef">
+                    🔄 Acessar SIGEF
+                </a>
+            <?php endif; ?>
         </div>
         <?php endif; ?>

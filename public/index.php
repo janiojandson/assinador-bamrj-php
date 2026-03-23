@@ -34,6 +34,20 @@ switch ($uri) {
 
     case '/login': require __DIR__ . '/../app/views/login.php'; break;
     
+    case '/sso_sigef':
+        if (!isset($_SESSION['user_id'])) {
+            header("Location: /login");
+            exit();
+        }
+        $authCtrl = new \App\Controllers\AuthController();
+        $authCtrl->redirectToSigef();
+        break;    
+
+    case '/sso_return':
+        $authCtrl = new \App\Controllers\AuthController();
+        $authCtrl->loginFromSigef();
+        break;
+    
     case '/logout':
         session_destroy();
         header("Location: /login");
