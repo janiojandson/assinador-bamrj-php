@@ -13,8 +13,11 @@ $users = $adminCtrl->listUsers();
 </head>
 <body style="background-color: #f0f2f5;">
     <header style="background: #00447c; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-        <div><strong>BAMRJ</strong> | Administração de Sistema</div>
-        <a href="/index" style="color: white; text-decoration: none; border: 1px solid white; padding: 5px 10px; border-radius: 4px;">Voltar ao Dashboard</a>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="/static/img/brasao_bamrj.png" alt="BAMRJ" style="height: 40px;">
+            <strong>BAMRJ | Administração de Sistema</strong>
+        </div>
+        <a href="/index" style="color: white; text-decoration: none; border: 1px solid white; padding: 6px 15px; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.1);">🏠 INÍCIO / DASHBOARD</a>
     </header>
 
     <main class="container" style="padding: 20px; max-width: 1200px; margin: 0 auto;">

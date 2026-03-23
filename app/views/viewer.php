@@ -77,11 +77,11 @@ $role = $dados['role'];
     </div>
 
     <div class="sidebar-right">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <a href="<?= $role === 'Usuário Comum' ? '/arquivo' : '/' ?>" style="color: white; background: #6c757d; text-decoration: none; font-weight: bold; padding: 8px 15px; border-radius: 4px;">⬅️ Voltar</a>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #002244; padding: 10px; border-radius: 4px;">
+            <a href="<?= $role === 'Usuário Comum' ? '/arquivo' : '/index' ?>" style="color: white; text-decoration: none; font-weight: bold; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; font-size: 0.9em; background: rgba(255,255,255,0.1);">🏠 INÍCIO</a>
             
             <?php if ($role === 'Operador' && in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Cancelado', 'Anulado', 'Reforçado'])): ?>
-                <a href="/edit?id=<?= $doc['id'] ?>" style="background: #ffcc00; color: #002244; text-decoration: none; font-weight: bold; padding: 8px 15px; border-radius: 4px;">✏️ Editar/Reiniciar</a>
+                <a href="/edit?id=<?= $doc['id'] ?>" style="background: #ffcc00; color: #002244; text-decoration: none; font-weight: bold; padding: 6px 12px; border-radius: 4px; font-size: 0.9em;">✏️ Editar/Reiniciar</a>
             <?php endif; ?>
         </div>
         

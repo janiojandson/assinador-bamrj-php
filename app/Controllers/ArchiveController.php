@@ -44,10 +44,14 @@ class ArchiveController {
         $data['search_query'] = $search_query;
 
         // Condição Base: Apenas processos finalizados
-        $sql = "SELECT * FROM documents 
-                WHERE status IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado') 
-                AND EXTRACT(YEAR FROM created_at) = ?";
-        $params = [$ano_filtro];
+        $sql = "SELECT * FROM documents WHERE status IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado')";
+        $params = [];
+
+        // 🟢 ATUALIZAÇÃO: Ignora o filtro de ano se for "todos"
+        if ($ano_filtro !== 'todos') {
+            $sql .= " AND EXTRACT(YEAR FROM created_at) = ?";
+            $params[] = $ano_filtro;
+        }
 
         // Se o usuário digitou algo na busca
         if (!empty($search_query)) {
