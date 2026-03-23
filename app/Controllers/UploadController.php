@@ -35,7 +35,8 @@ class UploadController {
             try {
                 $stmt = $db->prepare("INSERT INTO documents (protocol, name, cpf_cnpj, solemp, is_priority, current_observation, uploader_name, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 $obs_entry = "[Início] $observation";
-                $stmt->execute([$protocol, $process_name, $cpf_cnpj, $solemp, $priority, $obs_entry, $username, 'Caixa de Entrada - Enc. Finanças']);
+                // ATUALIZADO AQUI: Novo Status Inicial
+                $stmt->execute([$protocol, $process_name, $cpf_cnpj, $solemp, $priority, $obs_entry, $username, 'Caixa de Entrada - Gestor Financeiro']);
                 $docId = $db->lastInsertId();
 
                 $this->saveFiles($docId, $_FILES['minutas'], 'Minuta', $uploadDir, $fullPath);

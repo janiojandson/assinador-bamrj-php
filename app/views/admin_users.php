@@ -5,6 +5,7 @@ require __DIR__ . '/partials/header.php';
 $adminCtrl = new \App\Controllers\AdminController();
 $adminCtrl->handleCreate();
 $adminCtrl->handleEdit();
+$adminCtrl->handleMigration();
 $users = $adminCtrl->listUsers();
 ?>
 
@@ -32,11 +33,11 @@ $users = $adminCtrl->listUsers();
             <label style="font-size: 0.85em; color: #555; font-weight: bold;">Perfil</label>
             <select name="role" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                 <option value="Operador">Operador</option>
-                <option value="Enc_Financas">Encarregado de Finanças</option>
-                <option value="Ajudante_Encarregado">Ajudante do Encarregado</option>
-                <option value="Chefe_Departamento">Chefe de Departamento</option>
-                <option value="Vice_Diretor">Vice-Diretor</option>
-                <option value="Diretor">Diretor</option>
+                <option value="Gestor_Financeiro">Gestor Financeiro</option>
+                <option value="Gestor_Financeiro_Substituto">Gestor Financeiro Substituto</option>
+                <option value="Chefe_Departamento">Chefe do Departamento de Intendência</option>
+                <option value="Agente_Fiscal">Agente Fiscal</option>
+                <option value="Ordenador_Despesas">Ordenador de Despesas</option>
                 <option value="Admin">Administrador</option>
                 <option value="Usuário Comum">Usuário Comum (Consulta)</option>
             </select>
@@ -75,11 +76,11 @@ $users = $adminCtrl->listUsers();
                         
                         <select name="role" style="padding: 6px; border-radius: 3px; border: 1px solid #ccc;">
                             <option value="Operador" <?php echo $u['role'] == 'Operador' ? 'selected' : ''; ?>>Operador</option>
-                            <option value="Enc_Financas" <?php echo $u['role'] == 'Enc_Financas' ? 'selected' : ''; ?>>Enc. Finanças</option>
-                            <option value="Ajudante_Encarregado" <?php echo $u['role'] == 'Ajudante_Encarregado' ? 'selected' : ''; ?>>Ajudante Enc.</option>
+                            <option value="Gestor_Financeiro" <?php echo $u['role'] == 'Gestor_Financeiro' ? 'selected' : ''; ?>>Gestor Financeiro</option>
+                            <option value="Gestor_Financeiro_Substituto" <?php echo $u['role'] == 'Gestor_Financeiro_Substituto' ? 'selected' : ''; ?>>Gestor Fin. Substituto</option>
                             <option value="Chefe_Departamento" <?php echo $u['role'] == 'Chefe_Departamento' ? 'selected' : ''; ?>>Chefe Depto</option>
-                            <option value="Vice_Diretor" <?php echo $u['role'] == 'Vice_Diretor' ? 'selected' : ''; ?>>Vice-Diretor</option>
-                            <option value="Diretor" <?php echo $u['role'] == 'Diretor' ? 'selected' : ''; ?>>Diretor</option>
+                            <option value="Agente_Fiscal" <?php echo $u['role'] == 'Agente_Fiscal' ? 'selected' : ''; ?>>Agente Fiscal</option>
+                            <option value="Ordenador_Despesas" <?php echo $u['role'] == 'Ordenador_Despesas' ? 'selected' : ''; ?>>Ordenador de Despesas</option>
                             <option value="Admin" <?php echo $u['role'] == 'Admin' ? 'selected' : ''; ?>>Admin</option>
                             <option value="Usuário Comum" <?php echo $u['role'] == 'Usuário Comum' ? 'selected' : ''; ?>>Usr. Comum</option>
                         </select>
@@ -110,6 +111,15 @@ $users = $adminCtrl->listUsers();
             <p style="font-size: 0.85em; color: #555; margin-bottom: 20px;">Apaga todos os documentos, despachos, histórico de eventos, notas de empenho e PDFs do servidor. <strong>Os utilizadores cadastrados são mantidos intactos.</strong></p>
             <form action="/admin/reset_docs" method="POST" onsubmit="return confirm('TEM A CERTEZA? Todos os processos, históricos e PDFs serão apagados para sempre!');">
                 <button type="submit" style="background: #ffc107; color: #000; font-weight: bold; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; width: 100%;">Executar Limpeza de Processos</button>
+            </form>
+        </div>
+        
+        <div style="flex: 1; background: white; padding: 20px; border-radius: 6px; border: 1px solid #17a2b8;">
+            <h4 style="margin-top: 0; color: #0c5460; font-size: 1.1em;">🔄 Patch de Atualização (Banco de Dados)</h4>
+            <p style="font-size: 0.85em; color: #555; margin-bottom: 20px;">Atualiza processos travados com a nomenclatura antiga para "Gestor Financeiro" e ajusta a tabela. <strong>Use apenas 1 vez após a atualização.</strong></p>
+            <form method="POST" onsubmit="return confirm('Deseja aplicar a correção no banco de dados agora?');">
+                <input type="hidden" name="action" value="migrate_db">
+                <button type="submit" style="background: #17a2b8; color: white; font-weight: bold; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; width: 100%;">Aplicar Patch SQL</button>
             </form>
         </div>
 

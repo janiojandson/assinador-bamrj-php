@@ -27,7 +27,9 @@ class DocumentController {
             $is_priority = isset($_POST['priority']) ? 1 : 0;
             $obs = $_POST['observation'] ?? '';
             $uploader_name = $_SESSION['username'];
-            $status = 'Caixa de Entrada - Enc. Finanças';
+            
+            // ATUALIZADO: Vai direto para o Gestor Financeiro
+            $status = 'Caixa de Entrada - Gestor Financeiro';
             $ano_atual = date('Y');
             
             // Diretório Físico de Destino
@@ -60,7 +62,6 @@ class DocumentController {
                 $name = preg_replace("/[^a-zA-Z0-9.-]/", "_", basename($_FILES[$inputName]['name'][$i]));
                 if (move_uploaded_file($tmp_name, "{$dir}/{$name}")) {
                     $stmt = $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, ?)");
-                    // CORREÇÃO: Salvar com o prefixo 'uploads/' para alinhar com a URL pública
                     $stmt->execute([$docId, "uploads/{$ano}/{$protocol}/{$name}", $fileType]);
                 }
             }
@@ -108,7 +109,6 @@ class DocumentController {
                     $stmt->execute([$status_final, $id]);
                     
                     $stmt = $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, 'Nota de Empenho')");
-                    // CORREÇÃO: Prefixo uploads/
                     $stmt->execute([$id, "uploads/{$ano_doc}/{$doc['protocol']}/{$name}"]);
 
                     $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'ANEXAR_NE', ?)");
@@ -128,8 +128,15 @@ class DocumentController {
             $action = $_POST['action'] ?? ($_GET['action'] ?? '');
             
             $obs = trim($_POST['new_observation'] ?? '');
-            if (empty($obs)) {
-                die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>O despacho é OBRIGATÓRIO para aprovar ou devolver o processo. Volte e preencha o campo.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
+            
+            // ATUALIZADO (Ponto 5): Trava apenas se for REJEIÇÃO
+            if ($action === 'rejeitar' && empty($obs)) {
+                die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>O despacho é OBRIGATÓRIO para devolver ou rejeitar o processo. Indique o motivo.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
+            }
+            
+            // Se aprovar vazio, coloca texto padrão
+            if ($action === 'aprovar' && empty($obs)) {
+                $obs = "Processo verificado e tramitado.";
             }
 
             $username = $_SESSION['username'];
@@ -145,21 +152,39 @@ class DocumentController {
             $current_obs = $doc['current_observation'];
 
             $acao_str = ($action === 'aprovar') ? 'APROVADO' : 'REJEITADO';
-            $cargo = $is_sub ? "{$role} (SUBSTITUTO)" : ($role === 'Enc_Financas' ? 'Enc. Finanças' : $role);
-            $timestamp = date('d/m/Y H:i');
             
+            // Formatar Cargo para a Timeline
+            $cargo = $role;
+            if ($role === 'Gestor_Financeiro') $cargo = 'Gestor Financeiro';
+            if ($role === 'Gestor_Financeiro_Substituto') $cargo = 'Gestor Financeiro Substituto';
+            if ($role === 'Chefe_Departamento') $cargo = 'Chefe de Departamento';
+            if ($role === 'Agente_Fiscal') $cargo = 'Agente Fiscal';
+            if ($role === 'Ordenador_Despesas') $cargo = 'Ordenador de Despesas';
+            if ($is_sub) $cargo .= ' (SUBSTITUTO)';
+
+            $timestamp = date('d/m/Y H:i');
             $current_obs .= "\n[{$timestamp} - {$cargo}]: {$acao_str} - \"{$obs}\"";
 
             $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, ?, ?)");
             $stmt->execute([$doc_id, $username, strtoupper($action), $obs]);
 
+            // ATUALIZADO (Pontos 3 e 4): Lógica de Rejeição e Aprovação
             if ($action === 'rejeitar') {
-                $status = 'Devolvido - Operador';
+                if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto'])) {
+                    $status = 'Devolvido - Operador'; // Volta para o Operador
+                } else {
+                    $status = 'Caixa de Entrada - Gestor Financeiro'; // Chefes e Superiores voltam pro Gestor
+                }
             } elseif ($action === 'aprovar') {
-                if ($status === 'Caixa de Entrada - Enc. Finanças') $status = 'Caixa de Entrada - Chefe';
-                elseif ($status === 'Caixa de Entrada - Chefe') $status = ($is_sub && $role === 'Chefe_Departamento') ? 'Caixa de Entrada - Diretor' : 'Caixa de Entrada - Vice-Diretor';
-                elseif ($status === 'Caixa de Entrada - Vice-Diretor') $status = ($is_sub && $role === 'Vice_Diretor') ? 'Aguardando Empenho - Operador' : 'Caixa de Entrada - Diretor';
-                elseif ($status === 'Caixa de Entrada - Diretor') $status = 'Aguardando Empenho - Operador';
+                if ($status === 'Caixa de Entrada - Gestor Financeiro') {
+                    $status = 'Caixa de Entrada - Chefe de Departamento';
+                } elseif ($status === 'Caixa de Entrada - Chefe de Departamento') {
+                    $status = ($is_sub && $role === 'Chefe_Departamento') ? 'Caixa de Entrada - Ordenador de Despesas' : 'Caixa de Entrada - Agente Fiscal';
+                } elseif ($status === 'Caixa de Entrada - Agente Fiscal') {
+                    $status = ($is_sub && $role === 'Agente_Fiscal') ? 'Aguardando Empenho - Operador' : 'Caixa de Entrada - Ordenador de Despesas';
+                } elseif ($status === 'Caixa de Entrada - Ordenador de Despesas') {
+                    $status = 'Aguardando Empenho - Operador';
+                }
             }
 
             $stmt = $db->prepare("UPDATE documents SET status = ?, current_observation = ? WHERE id = ?");
@@ -170,7 +195,6 @@ class DocumentController {
     }
 
     public function getViewerData(): array {
-        // Exceção tática: Permite acesso a Usuário Comum se a intenção é transparência (simulada em /acesso_publico)
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $doc_id = $_GET['id'] ?? 0;
         $db = Database::getConnection();
@@ -194,7 +218,6 @@ class DocumentController {
     }
 
     public function getPdf() {
-        // CORREÇÃO: Removido o bloqueio de segurança para respeitar a Transparência LGPD (Público)
         $file = $_GET['file'] ?? '';
         $file = str_replace(['../', '..\\'], '', $file); 
         $path = __DIR__ . '/../../public/' . ltrim($file, '/');
@@ -217,13 +240,11 @@ class DocumentController {
         }
     }
 
-    // 🛡️ REQUISITO ATUALIZADO: Motor de Correção Total (Textos e Arquivados)
     public function editProcess() {
         $this->checkOperador();
         $db = Database::getConnection();
         $id = $_GET['id'] ?? 0;
 
-        // Permite "ressuscitar" processos devolvidos, arquivados, cancelados ou anulados
         $stmt = $db->prepare("SELECT * FROM documents WHERE id = ? AND status IN ('Devolvido - Operador', 'Arquivado', 'Cancelado', 'Anulado', 'Reforçado')");
         $stmt->execute([$id]);
         $doc = $stmt->fetch();
@@ -235,7 +256,6 @@ class DocumentController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $obs = trim($_POST['observation'] ?? '');
             
-            // Novos Dados Editados
             $name = trim($_POST['process_name'] ?? $doc['name']);
             $cpf_cnpj = preg_replace('/\D/', '', $_POST['cpf_cnpj'] ?? $doc['cpf_cnpj']);
             $solemp = preg_replace('/\D/', '', $_POST['solemp'] ?? $doc['solemp']);
@@ -257,9 +277,10 @@ class DocumentController {
 
                 $timestamp = date('d/m/Y H:i');
                 $current_obs = $doc['current_observation'] . "\n[{$timestamp} - Operador]: PROCESSO EDITADO/REINICIADO - \"{$obs}\"";
-                $novo_status = 'Caixa de Entrada - Enc. Finanças'; // Volta para o início
+                
+                // ATUALIZADO: Ao reiniciar, volta para o Gestor Financeiro
+                $novo_status = 'Caixa de Entrada - Gestor Financeiro';
 
-                // Atualiza TUDO: Nome, CPF, SOLEMP e Status
                 $stmt = $db->prepare("UPDATE documents SET name = ?, cpf_cnpj = ?, solemp = ?, status = ?, current_observation = ? WHERE id = ?");
                 $stmt->execute([$name, $cpf_cnpj, $solemp, $novo_status, $current_obs, $id]);
 
@@ -279,7 +300,6 @@ class DocumentController {
         $stmt->execute([$id]);
         $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Renderiza a view de edição
         require __DIR__ . '/../views/edit.php';
     }
 }

@@ -72,6 +72,35 @@ class AdminController {
         }
     }
 
+    // 🔄 Tática de Atualização: Roda comandos SQL direto pelo painel web
+    public function handleMigration() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'migrate_db') {
+            $db = Database::getConnection();
+            
+            try {
+                $db->beginTransaction();
+
+                // 1. Atualiza os processos antigos que ficaram com a nomenclatura velha
+                $stmt1 = $db->prepare("UPDATE documents SET status = 'Caixa de Entrada - Gestor Financeiro' WHERE status = 'Caixa de Entrada - Enc. Finanças'");
+                $stmt1->execute();
+
+                // 2. Atualiza a estrutura da tabela para que os novos processos já nasçam corretos
+                $stmt2 = $db->prepare("ALTER TABLE documents ALTER COLUMN status SET DEFAULT 'Caixa de Entrada - Gestor Financeiro'");
+                $stmt2->execute();
+
+                $db->commit();
+                
+                // Exibe um alerta de sucesso e recarrega a página
+                echo "<script>alert('✅ Patch Tático Aplicado! O Banco de Dados foi atualizado para a nova nomenclatura.'); window.location.href='/admin';</script>";
+                exit();
+                
+            } catch (\Exception $e) {
+                $db->rollBack();
+                die("<div style='padding:20px; background:#dc3545; color:white;'><h1>⚠️ Erro na Migração</h1><p>" . $e->getMessage() . "</p></div>");
+            }
+        }
+    }
+
     // ❌ Elimina o utilizador
     public function deleteUser($id) {
         $this->checkAdminAccess();

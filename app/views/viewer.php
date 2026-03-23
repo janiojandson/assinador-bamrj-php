@@ -37,7 +37,6 @@ $role = $dados['role'];
             
             <script>
                 document.addEventListener("DOMContentLoaded", async () => {
-                    // Lendo diretamente da pasta pública para manter a transparência
                     const pdfUrls = [
                         <?php foreach ($files as $f): ?>
                             "/<?= ltrim($f['filename'], '/') ?>",
@@ -118,14 +117,17 @@ $role = $dados['role'];
             <?php endif; ?>
         </div>
 
-        <?php if (in_array($role, ['Enc_Financas', 'Ajudante_Encarregado', 'Chefe_Departamento', 'Vice_Diretor', 'Diretor']) && strpos($doc['status'], 'Caixa de Entrada') !== false): ?>
+        <?php 
+        // ATUALIZADO: Usando os novos Nomes das Patentes e removendo a obrigatoriedade visual no HTML
+        if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas']) && strpos($doc['status'], 'Caixa de Entrada') !== false): 
+        ?>
             <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border: 2px solid #002244; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h4 style="margin-top: 0; color: #002244; margin-bottom: 10px; text-align: center;">✍️ Despacho Tático</h4>
                 <form action="/process_action?id=<?= $doc['id'] ?>" method="POST" id="form-despacho">
-                    <textarea name="new_observation" id="obs" required placeholder="Escreva aqui o seu despacho oficial (Campo Obrigatório)..." style="width: 100%; height: 120px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit; font-size: 1em;"></textarea>
+                    <textarea name="new_observation" id="obs" placeholder="Escreva aqui o seu despacho oficial (Obrigatório apenas em caso de REJEIÇÃO)..." style="width: 100%; height: 120px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit; font-size: 1em;"></textarea>
                     <div class="btn-group">
                         <button type="submit" name="action" value="aprovar" class="btn-aprovar" onclick="return confirm('Confirmar APROVAÇÃO do processo?');">✅ Aprovar e Tramitar</button>
-                        <button type="submit" name="action" value="rejeitar" class="btn-devolver" onclick="return confirm('ATENÇÃO: O processo será REJEITADO e devolvido ao Operador. Deseja prosseguir?');">❌ Rejeitar e Devolver</button>
+                        <button type="submit" name="action" value="rejeitar" class="btn-devolver" onclick="return confirm('ATENÇÃO: O processo será REJEITADO/DEVOLVIDO. Deseja prosseguir?');">❌ Rejeitar e Devolver</button>
                     </div>
                 </form>
             </div>

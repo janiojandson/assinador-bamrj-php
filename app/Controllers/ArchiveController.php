@@ -43,22 +43,31 @@ class ArchiveController {
 
         $data['search_query'] = $search_query;
 
-        // Condição Base: Apenas processos finalizados
-        $sql = "SELECT * FROM documents WHERE status IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado')";
+        // 🟢 CORREÇÃO DA REGRA 6: A query base agora não trava o status.
+        $sql = "SELECT * FROM documents WHERE 1=1";
         $params = [];
 
-        // 🟢 ATUALIZAÇÃO: Ignora o filtro de ano se for "todos"
+        // Ignora o filtro de ano se for "todos"
         if ($ano_filtro !== 'todos') {
             $sql .= " AND EXTRACT(YEAR FROM created_at) = ?";
             $params[] = $ano_filtro;
         }
 
-        // Se o usuário digitou algo na busca
         if (!empty($search_query)) {
+            // Se houver pesquisa, procura em QUALQUER etapa/status (Pesquisa Global)
             $sql .= " AND (name ILIKE ? OR protocol ILIKE ? OR cpf_cnpj ILIKE ? OR solemp ILIKE ?)";
             $like_q = "%{$search_query}%";
             $like_clean = "%{$search_query_clean}%";
             array_push($params, $like_q, $like_q, $like_clean, $like_clean);
+        } else {
+            // Se NÃO houver pesquisa (Navegação Padrão do Menu Arquivo)
+            if ($data['role'] === 'Usuário Comum') {
+                // Público não vê lista geral (Blindagem LGPD)
+                return $data; 
+            } else {
+                // Militar vê apenas processos já finalizados
+                $sql .= " AND status IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado')";
+            }
         }
 
         $sql .= " ORDER BY created_at DESC";
@@ -67,12 +76,7 @@ class ArchiveController {
         $stmt->execute($params);
         $all_docs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // 🛡️ Regra de Negócio: Público não vê a lista geral se não pesquisar nada
-        if ($data['role'] === 'Usuário Comum' && empty($search_query)) {
-            $data['documents'] = [];
-        } else {
-            $data['documents'] = is_array($all_docs) ? $all_docs : [];
-        }
+        $data['documents'] = is_array($all_docs) ? $all_docs : [];
 
         return $data;
     }
