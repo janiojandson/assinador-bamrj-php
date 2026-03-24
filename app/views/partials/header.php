@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title><?= $page_title ?? 'Assinador BAMRJ' ?></title>
+    <title><?= $page_title ?? 'Trâmite BAMRJ' ?></title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         body { background-color: #f4f7f6; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
@@ -57,7 +57,7 @@
         <div class="navbar-logo" style="display: flex; align-items: center; gap: 15px;">
             <img src="/static/img/brasao_bamrj.png" alt="BAMRJ">
             <h2 style="margin: 0; letter-spacing: 1px; font-size: 1.2em; text-transform: uppercase;">
-                ASSINADOR BAMRJ
+                TRAMITAÇÃO DE NE BAMRJ
             </h2>
         </div>
         <div class="navbar-links">

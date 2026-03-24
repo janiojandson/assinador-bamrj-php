@@ -17,14 +17,14 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
 <?php if ($role === 'Usuário Comum'): ?>
     <div style="background: #00447c; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <h2 style="margin: 0; font-size: 1.5em;">🔍 Consulta Pública de Processos</h2>
-        <p style="margin: 5px 0 0 0; font-size: 0.9em;">Acompanhe em tempo real a tramitação do seu processo. O acesso à documentação só é libertado após a emissão da Nota de Empenho.</p>
+        <p style="margin: 5px 0 0 0; font-size: 0.9em;">Acompanhe em tempo real a tramitação do seu processo. O acesso à Nota de Empenho só é libertada após as assinaturas.</p>
     </div>
 <?php endif; ?>
 
 <section style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #00447c;">
     <form method="GET" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
         <div style="flex: 2; min-width: 250px;">
-            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #333;">Pesquisar (Nome, Protocolo, CPF ou SOLEMP):</label>
+            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #333;">Pesquisar (Protocolo, CPF/CNPJ ou SOLEMP):</label>
             <input type="text" name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" placeholder="Digite para buscar e rastrear o processo..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
         </div>
         <div style="flex: 1; min-width: 150px;">
@@ -48,7 +48,7 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
         <thead>
             <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; text-align: left;">
                 <th style="padding: 15px; color: #00447c;">Protocolo</th>
-                <th style="padding: 15px; color: #00447c;">Nome/Favorecido</th>
+                <th style="padding: 15px; color: #00447c;">NE</th>
                 <th style="padding: 15px; color: #00447c;">Status Atual</th> 
                 <th style="padding: 15px; color: #00447c;">Data de Criação</th>
                 <th style="padding: 15px; color: #00447c; text-align: center;">Ações / Acesso</th>
@@ -83,7 +83,7 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
             <?php endforeach; ?>
             
             <?php if (empty($documents) && $role === 'Usuário Comum' && empty($_GET['q'])): ?>
-                <tr><td colspan="5" style="text-align: center; padding: 30px; color: #555;">👆 Utilize a barra de pesquisa acima inserindo o seu CPF/CNPJ ou Número de Protocolo para rastrear o processo.</td></tr>
+                <tr><td colspan="5" style="text-align: center; padding: 30px; color: #555;">👆 Utilize a barra de pesquisa acima.</td></tr>
             <?php elseif (empty($documents)): ?>
                 <tr><td colspan="5" style="text-align: center; padding: 30px; color: #dc3545;"><strong>❌ Nenhum registo encontrado para esta consulta.</strong> Verifique a numeração ou tente alterar o "Ano do Registo" para "Todos os Anos".</td></tr>
             <?php endif; ?>

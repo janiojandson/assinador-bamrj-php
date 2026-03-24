@@ -22,7 +22,7 @@ require __DIR__ . '/partials/header.php';
         </div>
 
         <div class="form-group" style="margin-bottom: 15px;">
-            <label style="font-weight: bold; color: #002244;">Assunto do Processo:</label>
+            <label style="font-weight: bold; color: #002244;">NE:</label>
             <input type="text" name="process_name" value="<?= htmlspecialchars($doc['name']) ?>" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
 

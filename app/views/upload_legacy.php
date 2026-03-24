@@ -35,8 +35,8 @@ require __DIR__ . '/partials/header.php';
         </div>
 
         <div class="form-group" style="margin-bottom: 18px;">
-            <label style="font-weight: bold; color: #444; display: block; margin-bottom: 5px;">Nome do Favorecido / Assunto:</label>
-            <input type="text" name="process_name" class="form-control" required placeholder="Ex: Aquisição de Material de Limpeza">
+            <label style="font-weight: bold; color: #444; display: block; margin-bottom: 5px;">NE:</label>
+            <input type="text" name="process_name" class="form-control" required placeholder="Ex: 2025XXXX">
         </div>
 
         <div style="display: flex; gap: 20px; margin-bottom: 25px;">
@@ -45,7 +45,7 @@ require __DIR__ . '/partials/header.php';
                 <input type="text" name="cpf_cnpj" class="form-control" placeholder="Apenas números">
             </div>
             <div class="form-group" style="flex: 1; margin: 0;">
-                <label style="font-weight: bold; color: #444; display: block; margin-bottom: 5px;">Nº SOLEMP ou NUP:</label>
+                <label style="font-weight: bold; color: #444; display: block; margin-bottom: 5px;">Nº SOLEMP:</label>
                 <input type="text" name="solemp" class="form-control" placeholder="Número da SOLEMP">
             </div>
         </div>

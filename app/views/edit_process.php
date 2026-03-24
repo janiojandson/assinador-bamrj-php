@@ -28,7 +28,7 @@ if (!$doc || !in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Ca
     </div>
 
     <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 4px; margin-bottom: 25px; border-left: 4px solid #ffeeba;">
-        <strong>Atenção Operador:</strong> Ao salvar, este processo sairá do status <em>"<?= htmlspecialchars($doc['status']) ?>"</em> e será reencaminhado para a <strong>Caixa de Entrada do Enc. de Finanças</strong>.
+        <strong>Atenção Operador:</strong> Ao salvar, este processo sairá do status <em>"<?= htmlspecialchars($doc['status']) ?>"</em> e será reencaminhado para a <strong>Caixa de Entrada do Gestor Financeiro</strong>.
     </div>
 
     <?php if ($error): ?>
@@ -96,7 +96,7 @@ if (!$doc || !in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Ca
         </div>
 
         <button type="submit" style="width: 100%; background: #004488; color: white; padding: 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1em; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: 0.2s;">
-            ♻️ GRAVAR E REINICIAR TRAMITAÇÃO TÁTICA
+            ♻️ GRAVAR E REINICIAR TRAMITAÇÃO
         </button>
     </form>
 </div>

@@ -31,8 +31,8 @@ $suggestedProtocol = "BAMRJ-{$dateStr}-{$randomId}";
         </div>
 
         <div style="margin-bottom: 15px;">
-            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Nome do Processo / Favorecido:</label>
-            <input type="text" name="process_name" required placeholder="Ex: Aquisição de Material de Escritório" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">NE:</label>
+            <input type="text" name="process_name" required placeholder="Ex: 2024xxxx" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
         </div>
 
         <div style="display: flex; gap: 15px; margin-bottom: 15px;">
