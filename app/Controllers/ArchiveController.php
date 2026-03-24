@@ -43,19 +43,21 @@ class ArchiveController {
 
         $data['search_query'] = $search_query;
 
-        // 🟢 CORREÇÃO DA REGRA 6: A query base agora não trava o status.
-        $sql = "SELECT * FROM documents WHERE 1=1";
+        // 🟢 ATUALIZAÇÃO (Ponto 6): Calculando a data/hora da última movimentação (last_update)
+        $sql = "SELECT d.*, 
+                COALESCE((SELECT MAX(timestamp) FROM events e WHERE e.document_id = d.id), d.created_at) as last_update 
+                FROM documents d WHERE 1=1";
         $params = [];
 
         // Ignora o filtro de ano se for "todos"
         if ($ano_filtro !== 'todos') {
-            $sql .= " AND EXTRACT(YEAR FROM created_at) = ?";
+            $sql .= " AND EXTRACT(YEAR FROM d.created_at) = ?";
             $params[] = $ano_filtro;
         }
 
         if (!empty($search_query)) {
             // Se houver pesquisa, procura em QUALQUER etapa/status (Pesquisa Global)
-            $sql .= " AND (name ILIKE ? OR protocol ILIKE ? OR cpf_cnpj ILIKE ? OR solemp ILIKE ?)";
+            $sql .= " AND (d.name ILIKE ? OR d.protocol ILIKE ? OR d.cpf_cnpj ILIKE ? OR d.solemp ILIKE ?)";
             $like_q = "%{$search_query}%";
             $like_clean = "%{$search_query_clean}%";
             array_push($params, $like_q, $like_q, $like_clean, $like_clean);
@@ -66,11 +68,12 @@ class ArchiveController {
                 return $data; 
             } else {
                 // Militar vê apenas processos já finalizados
-                $sql .= " AND status IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado')";
+                $sql .= " AND d.status IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado')";
             }
         }
 
-        $sql .= " ORDER BY created_at DESC";
+        // Ordena sempre pela última movimentação (Mais recentes primeiro)
+        $sql .= " ORDER BY last_update DESC";
 
         $stmt = $db->prepare($sql);
         $stmt->execute($params);

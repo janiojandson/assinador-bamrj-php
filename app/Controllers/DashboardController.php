@@ -93,9 +93,13 @@ class DashboardController {
         // 6. VISÃO DAS CHEFIAS (Workflow de Aprovação Atualizado)
         $inbox_statuses = [];
         
-        // 🟢 CORREÇÃO APLICADA: Novas Roles e Novos Status
+        // 🟢 ATUALIZAÇÃO: Novas Caixas de Entrada e Substituições (Gestor Financeiro, Chefe, etc.)
         if ($data['role'] === 'Gestor_Financeiro' || $data['role'] === 'Gestor_Financeiro_Substituto') {
             $inbox_statuses[] = 'Caixa de Entrada - Gestor Financeiro';
+            $inbox_statuses[] = 'Devolvido - Gestor Financeiro'; // Caixa de Devolvidos pelo Chefe/Superior
+            if ($data['is_substitute']) {
+                $inbox_statuses[] = 'Caixa de Entrada - Chefe de Departamento'; // Acesso à mesa do Chefe
+            }
             
         } elseif ($data['role'] === 'Chefe_Departamento') {
             $inbox_statuses[] = 'Caixa de Entrada - Chefe de Departamento';

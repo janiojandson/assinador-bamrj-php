@@ -49,7 +49,7 @@ $inbox_count = $dados['inbox_count'];
         <?php endif; ?>
     </div>
     <div style="display: flex; gap: 10px; width: 100%; justify-content: flex-end;">
-        <?php if (in_array($role, ['Chefe_Departamento', 'Agente_Fiscal'])): ?>
+        <?php if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal'])): ?>
             <a href="/toggle_substitute" style="background: #ffcc00; color: #002244; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; text-align: center;">
                 <?= $is_substitute ? '⬅️ Desativar Substituição' : '⚡ Ativar Substituição Superior' ?>
             </a>
@@ -128,9 +128,7 @@ $inbox_count = $dados['inbox_count'];
 <?php if ($role === 'Operador'): ?>
 <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
     <button onclick="document.getElementById('modal').style.display='block'" style="background: #28a745; color: white; padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">➕ Iniciar Novo Processo</button>
-    
     <a href="/upload_legado" style="background: #f39c12; color: white; padding: 12px 20px; text-decoration: none; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📄 Inserir Acervo Histórico</a>
-    
     <a href="/arquivo" style="background: #6c757d; color: white; padding: 12px 20px; text-decoration: none; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🗄️ Acessar Arquivo Geral</a>
 </div>
 
@@ -200,6 +198,7 @@ $inbox_count = $dados['inbox_count'];
                             <?php
                             $statusBg = '#e2e3e5'; $statusColor = '#383d41';
                             if ($doc['status'] === 'Devolvido - Operador') { $statusBg = '#f8d7da'; $statusColor = '#721c24'; }
+                            elseif ($doc['status'] === 'Devolvido - Gestor Financeiro') { $statusBg = '#f5c6cb'; $statusColor = '#721c24'; }
                             elseif ($doc['status'] === 'Aguardando Empenho - Operador') { $statusBg = '#d4edda'; $statusColor = '#155724'; }
                             ?>
                             <span style="font-size: 0.85em; padding: 6px 10px; border-radius: 4px; font-weight: bold; background: <?= $statusBg ?>; color: <?= $statusColor ?>;">

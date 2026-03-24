@@ -28,7 +28,7 @@ class DocumentController {
             $obs = $_POST['observation'] ?? '';
             $uploader_name = $_SESSION['username'];
             
-            // ATUALIZADO: Vai direto para o Gestor Financeiro
+            // Vai direto para o Gestor Financeiro
             $status = 'Caixa de Entrada - Gestor Financeiro';
             $ano_atual = date('Y');
             
@@ -129,7 +129,7 @@ class DocumentController {
             
             $obs = trim($_POST['new_observation'] ?? '');
             
-            // ATUALIZADO (Ponto 5): Trava apenas se for REJEIÇÃO
+            // Trava apenas se for REJEIÇÃO
             if ($action === 'rejeitar' && empty($obs)) {
                 die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>O despacho é OBRIGATÓRIO para devolver ou rejeitar o processo. Indique o motivo.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
             }
@@ -168,16 +168,24 @@ class DocumentController {
             $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, ?, ?)");
             $stmt->execute([$doc_id, $username, strtoupper($action), $obs]);
 
-            // ATUALIZADO: Lógica de Rejeição e Aprovação
+            // 🟢 LÓGICA TÁTICA ATUALIZADA (Pontos 1 e 3 da Chefia)
             if ($action === 'rejeitar') {
                 if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto'])) {
+                    // O Gestor devolve para a base (Operador)
                     $status = 'Devolvido - Operador'; 
                 } else {
-                    $status = 'Caixa de Entrada - Gestor Financeiro'; 
+                    // Qualquer outra Chefia que rejeitar, devolve para o Gestor Financeiro
+                    $status = 'Devolvido - Gestor Financeiro'; 
                 }
             } elseif ($action === 'aprovar') {
-                if ($status === 'Caixa de Entrada - Gestor Financeiro') {
-                    $status = 'Caixa de Entrada - Chefe de Departamento';
+                // Se estiver na Caixa do Gestor (Normal ou Devolvido)
+                if ($status === 'Caixa de Entrada - Gestor Financeiro' || $status === 'Devolvido - Gestor Financeiro') {
+                    // Se o Gestor ativou substituição, salta o Chefe e vai para o Agente Fiscal
+                    if ($is_sub && in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto'])) {
+                        $status = 'Caixa de Entrada - Agente Fiscal';
+                    } else {
+                        $status = 'Caixa de Entrada - Chefe de Departamento';
+                    }
                 } elseif ($status === 'Caixa de Entrada - Chefe de Departamento') {
                     $status = ($is_sub && $role === 'Chefe_Departamento') ? 'Caixa de Entrada - Ordenador de Despesas' : 'Caixa de Entrada - Agente Fiscal';
                 } elseif ($status === 'Caixa de Entrada - Agente Fiscal') {
@@ -278,7 +286,6 @@ class DocumentController {
                 $timestamp = date('d/m/Y H:i');
                 $current_obs = $doc['current_observation'] . "\n[{$timestamp} - Operador]: PROCESSO EDITADO/REINICIADO - \"{$obs}\"";
                 
-                // ATUALIZADO: Ao reiniciar, volta para o Gestor Financeiro
                 $novo_status = 'Caixa de Entrada - Gestor Financeiro';
 
                 $stmt = $db->prepare("UPDATE documents SET name = ?, cpf_cnpj = ?, solemp = ?, status = ?, current_observation = ? WHERE id = ?");

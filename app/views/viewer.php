@@ -16,7 +16,6 @@ $role = $dados['role'];
     .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
     .viewer-container { display: flex; height: 100vh; overflow: hidden; background: #e9ecef; }
     
-    /* 🟢 PDF DIMINUÍDO, SIDEBAR AUMENTADA (500px) */
     .pdf-area-left { flex: 1; background: #525659; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
     .sidebar-right { width: 500px; background: #f8f9fa; padding: 25px; overflow-y: auto; border-left: 3px solid #ccc; display: flex; flex-direction: column; box-shadow: -4px 0 10px rgba(0,0,0,0.05); }
     
@@ -27,18 +26,14 @@ $role = $dados['role'];
     .btn-devolver { background-color: #dc3545; }
     .btn-devolver:hover { background-color: #c82333; }
     
-    /* Estilo de caixas baseadas na imagem de referência */
     .info-box { background: white; padding: 15px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 20px; }
 </style>
 
 <div class="viewer-container">
-    
     <div class="pdf-area-left">
         <?php if (count($files) > 0): ?>
             <h3 id="loading-msg" style="color: white; text-align: center; margin-top: 20px;">⚙️ A unificar e decodificar documentos... Aguarde.</h3>
-            
             <iframe id="single-pdf-viewer" style="width: 100%; height: 95vh; max-width: 1200px; border: none; display: none; background: white; border-radius: 5px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);" src=""></iframe>
-            
             <script>
                 document.addEventListener("DOMContentLoaded", async () => {
                     const pdfUrls = [
@@ -46,28 +41,24 @@ $role = $dados['role'];
                             "/<?= ltrim($f['filename'], '/') ?>",
                         <?php endforeach; ?>
                     ];
-                    
                     try {
                         const { PDFDocument } = PDFLib;
                         const mergedPdf = await PDFDocument.create();
-                        
                         for (let url of pdfUrls) {
                             const pdfBytes = await fetch(url).then(res => res.arrayBuffer());
                             const pdf = await PDFDocument.load(pdfBytes);
                             const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
                             copiedPages.forEach((page) => mergedPdf.addPage(page));
                         }
-                        
                         const mergedPdfFile = await mergedPdf.save();
                         const blob = new Blob([mergedPdfFile], { type: 'application/pdf' });
                         const blobUrl = URL.createObjectURL(blob);
-                        
                         const viewer = document.getElementById('single-pdf-viewer');
                         viewer.src = blobUrl + "#toolbar=1&navpanes=0";
                         viewer.style.display = 'block';
                         document.getElementById('loading-msg').style.display = 'none';
                     } catch (err) {
-                        console.error("Erro Tático na Fusão de PDFs: ", err);
+                        console.error("Erro na Fusão de PDFs: ", err);
                         document.getElementById('loading-msg').innerText = "⚠️ Ocorreu um erro ao unificar os documentos. Tente recarregar a página.";
                     }
                 });
@@ -80,13 +71,13 @@ $role = $dados['role'];
     </div>
 
     <div class="sidebar-right">
-        
         <h2 style="margin-top:0; color: #002244; font-size: 1.5em; margin-bottom: 10px;">
             <?= htmlspecialchars($doc['protocol']) ?>
         </h2>
         
         <p style="margin: 5px 0; font-size: 0.95em;"><b>Assunto:</b> <?= htmlspecialchars($doc['name']) ?></p>
         <p style="margin: 5px 0; font-size: 0.95em;"><b>CPF/CNPJ:</b> <?= htmlspecialchars($doc['cpf_cnpj']) ?: '-' ?></p>
+        <p style="margin: 5px 0; font-size: 0.95em;"><b>SOLEMP:</b> <?= htmlspecialchars($doc['solemp']) ?: '-' ?></p>
         
         <div style="margin: 10px 0 20px 0; border-bottom: 2px solid #002244; padding-bottom: 15px;">
             <b style="font-size: 0.95em;">Status:</b>
@@ -95,9 +86,8 @@ $role = $dados['role'];
             </span>
         </div>
 
-        <div class="info-box" style="background: #f1f3f5;">
+        <div class="info-box" style="background: #f1f3f5; max-height: 150px; overflow-y: auto;">
             <h4 style="margin-top: 0; color: #333; margin-bottom: 15px; font-size: 1em;">📎 Documentos do Processo (<?= count($files) ?>):</h4>
-            
             <?php foreach ($files as $f): 
                 $tipo = $f['file_type'];
                 $nome = basename($f['filename']);
@@ -123,13 +113,12 @@ $role = $dados['role'];
         <?php endif; ?>
 
         <?php 
-        if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas']) && strpos($doc['status'], 'Caixa de Entrada') !== false): 
+        if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas']) && (strpos($doc['status'], 'Caixa de Entrada') !== false || $doc['status'] === 'Devolvido - Gestor Financeiro')): 
         ?>
             <div>
                 <h4 style="color: #d35400; margin-bottom: 8px; font-size: 1em;">✍️ Seu Parecer:</h4>
                 <form action="/process_action?id=<?= $doc['id'] ?>" method="POST" id="form-despacho">
                     <textarea name="new_observation" id="obs" placeholder="Digite aqui o despacho para o próximo nível..." style="width: 100%; height: 90px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit; font-size: 0.95em;"></textarea>
-                    
                     <div class="btn-group">
                         <button type="submit" name="action" value="aprovar" class="btn-aprovar">✅ APROVAR</button>
                         <button type="submit" name="action" value="rejeitar" class="btn-devolver">❌ REJEITAR</button>
@@ -143,7 +132,6 @@ $role = $dados['role'];
         <?php endif; ?>
 
         <a href="<?= $role === 'Usuário Comum' ? '/arquivo' : '/index' ?>" style="display: block; text-align: center; margin-top: 15px; background: #e9ecef; color: #002244; font-weight: bold; padding: 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">⬅ Voltar aos Resultados</a>
-        
     </div>
 </div>
 

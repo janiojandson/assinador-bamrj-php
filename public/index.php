@@ -1,7 +1,7 @@
 <?php
 /**
  * FRONT CONTROLLER - ASSINADOR BAMRJ
- * Versão Final: Rotas Táticas, Arquivo Legado e Radar de Inbox
+ * Versão Final: Rotas Táticas, Arquivo Legado, Radar de Inbox e SSO
  */
 
 ini_set('display_errors', 1);
@@ -32,13 +32,26 @@ switch ($uri) {
         require __DIR__ . '/../app/views/dashboard.php';
         break;
 
-    case '/login': require __DIR__ . '/../app/views/login.php'; break;
+    case '/login': 
+        require __DIR__ . '/../app/views/login.php'; 
+        break;
     
+    case '/setup_password':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        require __DIR__ . '/../app/views/setup_password.php';
+        break;
+
+    case '/logout':
+        session_destroy();
+        header("Location: /login");
+        exit();
+        break;
+
+    /* =========================================
+       ROTAS DE SSO (SIGEF) E SUBSTITUIÇÃO
+       ========================================= */
     case '/toggle_substitute':
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /login");
-            exit();
-        }
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         // Inverte o estado da substituição (Se for falso vira verdadeiro, e vice-versa)
         $_SESSION['is_substitute'] = !($_SESSION['is_substitute'] ?? false);
         header("Location: /index");
@@ -46,10 +59,7 @@ switch ($uri) {
         break;    
 
     case '/sso_sigef':
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /login");
-            exit();
-        }
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         $authCtrl = new \App\Controllers\AuthController();
         $authCtrl->redirectToSigef();
         break;    
@@ -57,17 +67,6 @@ switch ($uri) {
     case '/sso_return':
         $authCtrl = new \App\Controllers\AuthController();
         $authCtrl->loginFromSigef();
-        break;
-    
-    case '/logout':
-        session_destroy();
-        header("Location: /login");
-        exit();
-        break;
-
-    case '/setup_password':
-        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        require __DIR__ . '/../app/views/setup_password.php';
         break;
 
     /* =========================================
@@ -127,10 +126,10 @@ switch ($uri) {
         header('Content-Type: application/json');
         if (!isset($_SESSION['user_id'])) { echo json_encode(['count' => 0]); exit; }
         
-        // Reutilizamos a lógica do dashboard para contar processos pendentes
-        $docCtrl = new \App\Controllers\DocumentController();
-        $docs = $docCtrl->getDashboardData(); 
-        echo json_encode(['count' => count($docs)]);
+        // 🟢 CORREÇÃO CRÍTICA APLICADA: Agora utiliza o DashboardController corretamente
+        $dashCtrl = new \App\Controllers\DashboardController();
+        $data = $dashCtrl->getDashboardData(); 
+        echo json_encode(['count' => $data['inbox_count'] ?? 0]);
         break;
 
     /* =========================================
@@ -148,25 +147,23 @@ switch ($uri) {
         break;
 
     case '/admin/reset_docs':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
-            header("Location: /index");
-            exit();
-        }
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
         $adminCtrl = new \App\Controllers\AdminController();
         $adminCtrl->resetDocs();
         break;
 
     case '/admin/factory_reset':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
-            header("Location: /index");
-            exit();
-        }
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
         $adminCtrl = new \App\Controllers\AdminController();
         $adminCtrl->factoryReset();
         break;
     
     default:
         http_response_code(404);
-        echo "<h1>404</h1><p>Erro: Rota não encontrada no perímetro do Assinador-BAMRJ.</p>";
+        echo "<div style='padding:40px; font-family:sans-serif; text-align:center;'>
+                <h1 style='color:#d32f2f;'>⚠️ 404 - ALERTA DE ROTA</h1>
+                <p>A página que tentou aceder não existe no perímetro do Assinador-BAMRJ.</p>
+                <a href='/index' style='padding:10px 20px; background:#00447c; color:white; text-decoration:none; border-radius:4px;'>Voltar à Base</a>
+              </div>";
         break;
 }
