@@ -21,7 +21,7 @@ if (!in_array($role, ['Operador', 'Admin'])) {
         <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
             <div style="flex: 2; min-width: 300px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 5px;">Assunto do Processo *</label>
-                <input type="text" name="process_name" placeholder="Ex: Aquisição de Material..." required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="text" name="process_name" placeholder="Ex: Aquisição de Material 2023..." required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
             </div>
             <div style="flex: 1; min-width: 150px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 5px;">Ano de Referência *</label>

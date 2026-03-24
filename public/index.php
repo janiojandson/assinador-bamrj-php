@@ -47,12 +47,8 @@ switch ($uri) {
         exit();
         break;
 
-    /* =========================================
-       ROTAS DE SSO (SIGEF) E SUBSTITUIÇÃO
-       ========================================= */
     case '/toggle_substitute':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        // Inverte o estado da substituição (Se for falso vira verdadeiro, e vice-versa)
         $_SESSION['is_substitute'] = !($_SESSION['is_substitute'] ?? false);
         header("Location: /index");
         exit();
@@ -69,17 +65,24 @@ switch ($uri) {
         $authCtrl->loginFromSigef();
         break;
 
-    /* =========================================
-       ROTAS DE CRIAÇÃO E CONSULTA
-       ========================================= */
     case '/upload':
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /index"); exit(); }
-        require __DIR__ . '/../app/views/upload_process.php';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $upCtrl = new \App\Controllers\UploadController();
+            $upCtrl->handleUpload(); 
+        } else {
+            require __DIR__ . '/../app/views/upload_process.php'; 
+        }
         break;
         
     case '/upload_legado':
         if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Operador', 'Admin'])) { header("Location: /index"); exit(); }
-        require __DIR__ . '/../app/views/upload_legacy.php';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $upCtrl = new \App\Controllers\UploadController();
+            $upCtrl->handleLegacyUpload(); 
+        } else {
+            require __DIR__ . '/../app/views/upload_legacy.php';
+        }
         break;
 
     case '/view':
@@ -96,45 +99,34 @@ switch ($uri) {
         \App\Controllers\ArchiveController::simulatePublicAccess();
         break;
 
-    /* =========================================
-       ROTAS DE AÇÃO MILITAR (Controllers Diretos)
-       ========================================= */
     case '/process_action':
         $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->processAction(); // Aprova ou Devolve
+        $docCtrl->processAction(); 
         break;
 
     case '/cancel':
         $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->cancelProcess(); // Cancela o processo
+        $docCtrl->cancelProcess(); 
         break;
 
     case '/upload_ne':
         $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->uploadNE(); // Anexa a Nota de Empenho Final
+        $docCtrl->uploadNE(); 
         break;
 
     case '/edit':
         $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->editProcess(); // O Controlador valida, atualiza e carrega a View sozinho
+        $docCtrl->editProcess(); 
         break;
 
-    /* =========================================
-       RADAR TÁTICO (AJAX Polling do Dashboard)
-       ========================================= */
     case '/api/check_inbox':
         header('Content-Type: application/json');
         if (!isset($_SESSION['user_id'])) { echo json_encode(['count' => 0]); exit; }
-        
-        // 🟢 CORREÇÃO CRÍTICA APLICADA: Agora utiliza o DashboardController corretamente
         $dashCtrl = new \App\Controllers\DashboardController();
         $data = $dashCtrl->getDashboardData(); 
         echo json_encode(['count' => $data['inbox_count'] ?? 0]);
         break;
 
-    /* =========================================
-       ADMINISTRAÇÃO
-       ========================================= */
     case '/admin':
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
         require __DIR__ . '/../app/views/admin_users.php';
