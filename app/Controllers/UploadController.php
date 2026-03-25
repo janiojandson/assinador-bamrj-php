@@ -81,14 +81,14 @@ class UploadController {
 
             $db->beginTransaction();
             try {
-                // Insere na Base de Dados (is_priority = 0, status = 'Arquivado')
-                $stmt = $db->prepare("INSERT INTO documents (protocol, name, cpf_cnpj, solemp, is_priority, current_observation, uploader_name, status, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)");
+                // 🟢 CORREÇÃO TÁTICA: Trocado o '0' pela tipagem correta 'false' no PostgreSQL
+                $stmt = $db->prepare("INSERT INTO documents (protocol, name, cpf_cnpj, solemp, is_priority, current_observation, uploader_name, status, created_at) VALUES (?, ?, ?, ?, false, ?, ?, ?, ?)");
                 
                 $obs_entry = "[Acervo Histórico] Documento inserido retroativamente pelo Operador $username, referencial ao ano de $year.";
                 $stmt->execute([$protocol, $process_name, $cpf_cnpj, $solemp, $obs_entry, $username, 'Arquivado', $fakeDate]);
                 $docId = $db->lastInsertId();
 
-                // Salva o PDF como "Nota de Empenho" para habilitar o Download!
+                // Salva o PDF como "Nota de Empenho" para habilitar o Download Público!
                 $this->saveFiles($docId, $_FILES['documento'], 'Nota de Empenho', $uploadDir, $fullPath);
 
                 $db->commit();
