@@ -57,7 +57,7 @@ $inbox_count = $dados['inbox_count'];
         
         <form action="/" method="GET" style="display: flex; gap: 5px;">
             <select name="ano" id="filtro-ano-dash" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; color: #002244;"></select>
-            <input type="text" name="q" placeholder="Buscar SOLEMP, CNPJ, Nome..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px;">
+            <input type="text" name="q" placeholder="Buscar SOLEMP, CNPJ..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px;">
             <button type="submit" style="padding: 10px 15px; background: #004488; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍</button>
         </form>
     </div>
