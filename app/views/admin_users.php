@@ -16,7 +16,7 @@ $users = $adminCtrl->listUsers();
         
         <div>
             <label style="font-size: 0.85em; color: #555; font-weight: bold;">Pos/Gra Nome de Guerra</label>
-            <input type="text" name="name" placeholder="Ex: 1°SG-CN Silva" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <input type="text" name="name" placeholder="Ex: 1°SG-CN SILVA" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
         </div>
         
         <div>
