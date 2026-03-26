@@ -17,14 +17,14 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
 <?php if ($role === 'Usuário Comum'): ?>
     <div style="background: #00447c; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <h2 style="margin: 0; font-size: 1.5em;">🔍 Consulta Pública de Processos e NE</h2>
-        <p style="margin: 5px 0 0 0; font-size: 0.9em;">Acompanhe a tramitação do seu processo. O acesso à Nota de Empenho só é libertado após as assinaturas (Status Arquivado/Reforçado).</p>
+        <p style="margin: 5px 0 0 0; font-size: 0.9em;">Acompanhe a tramitação do seu processo. O acesso à Nota de Empenho só é liberado após as assinaturas (Status Arquivado/Reforçado).</p>
     </div>
 <?php endif; ?>
 
 <section style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #00447c;">
     <form method="GET" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
         <div style="flex: 2; min-width: 250px;">
-            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #333;">Pesquisar (Nome, Protocolo, CNPJ ou SOLEMP):</label>
+            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #333;">Pesquisar (Protocolo, CNPJ / CPF ou SOLEMP):</label>
             <input type="text" name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" placeholder="Digite para buscar e rastrear o processo..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
         </div>
         <div style="flex: 1; min-width: 150px;">
@@ -96,7 +96,7 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
             <?php endforeach; ?>
             
             <?php if (empty($documents) && $role === 'Usuário Comum' && empty($_GET['q'])): ?>
-                <tr><td colspan="5" style="text-align: center; padding: 30px; color: #555;">👆 Utilize a barra de pesquisa inserindo o SOLEMP/NE, CNPJ ou Protocolo.</td></tr>
+                <tr><td colspan="5" style="text-align: center; padding: 30px; color: #555;">👆 Utilize a barra de pesquisa inserindo o SOLEMP, NE, CNPJ / CPF ou Protocolo.</td></tr>
             <?php elseif (empty($documents)): ?>
                 <tr><td colspan="5" style="text-align: center; padding: 30px; color: #dc3545;"><strong>❌ Nenhum registo encontrado para esta consulta.</strong> Verifique a numeração ou tente alterar o "Ano do Registo" para "Todos os Anos".</td></tr>
             <?php endif; ?>
