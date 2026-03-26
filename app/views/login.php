@@ -16,7 +16,7 @@ $error = $auth->login();
         <?php endif; ?>
 
         <form method="POST">
-            <input type="text" name="username" placeholder="NIP / Utilizador" required 
+            <input type="text" name="username" placeholder="Utilizador" required 
                    style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
             <input type="password" name="password" placeholder="Senha" required 
                    style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
