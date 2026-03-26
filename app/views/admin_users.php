@@ -10,18 +10,18 @@ $users = $adminCtrl->listUsers();
 ?>
 
 <section style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #00447c;">
-    <h3 style="color: #00447c; margin-top: 0;">➕ Cadastrar Novo Militar</h3>
+    <h3 style="color: #00447c; margin-top: 0;">➕ Cadastrar Novo Utilizador</h3>
     <form method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end;">
         <input type="hidden" name="action" value="create">
         
         <div>
-            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Nome / Guerra</label>
-            <input type="text" name="name" placeholder="Ex: MN Silva" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Pos/Gra Nome de Guerra</label>
+            <input type="text" name="name" placeholder="Ex: 1°SG-CN Silva" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
         </div>
         
         <div>
-            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Login (NIP)</label>
-            <input type="text" name="username" placeholder="Utilizador" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <label style="font-size: 0.85em; color: #555; font-weight: bold;">Utilizador</label>
+            <input type="text" name="username" placeholder="Ex silva" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
         </div>
         
         <div>
