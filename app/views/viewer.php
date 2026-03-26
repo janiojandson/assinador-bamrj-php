@@ -117,14 +117,42 @@ $role = $dados['role'];
         ?>
             <div>
                 <h4 style="color: #d35400; margin-bottom: 8px; font-size: 1em;">✍️ Seu Parecer:</h4>
+                
+                <?php if (isset($_GET['aviso']) && $_GET['aviso'] === 'falta_parecer'): ?>
+                    <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 0.9em; font-weight: bold; border-left: 4px solid #ffc107;">
+                        ⚠️ Senhor Oficial, por favor, insira a justificativa no campo abaixo antes de rejeitar.
+                    </div>
+                <?php endif; ?>
+
                 <form action="/process_action?id=<?= $doc['id'] ?>" method="POST" id="form-despacho">
                     <textarea name="new_observation" id="obs" placeholder="Digite aqui o despacho para o próximo nível..." style="width: 100%; height: 90px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit; font-size: 0.95em;"></textarea>
+                    
+                    <div id="alerta-rejeicao-js" style="display: none; background: #fff3cd; color: #856404; padding: 8px 10px; border-radius: 4px; margin-top: 10px; font-size: 0.85em; font-weight: bold; border-left: 4px solid #ffc107;">
+                        ⚠️ Para devolver o processo, é necessário preencher o motivo acima.
+                    </div>
+
                     <div class="btn-group">
                         <button type="submit" name="action" value="aprovar" class="btn-aprovar">✅ APROVAR</button>
-                        <button type="submit" name="action" value="rejeitar" class="btn-devolver">❌ REJEITAR</button>
+                        <button type="submit" name="action" value="rejeitar" class="btn-devolver" onclick="return validarRejeicao(event)">❌ REJEITAR</button>
                     </div>
                 </form>
             </div>
+            
+            <script>
+            function validarRejeicao(e) {
+                const obs = document.getElementById('obs').value.trim();
+                const alerta = document.getElementById('alerta-rejeicao-js');
+                if (obs === '') {
+                    e.preventDefault(); // Trava a tela para não sair do lugar
+                    alerta.style.display = 'block';
+                    document.getElementById('obs').focus();
+                    document.getElementById('obs').style.borderColor = '#e67e22';
+                    return false;
+                }
+                alerta.style.display = 'none';
+                return true;
+            }
+            </script>
         <?php endif; ?>
         
         <?php if ($role === 'Operador' && in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Cancelado', 'Anulado', 'Reforçado'])): ?>
