@@ -28,11 +28,9 @@ class DocumentController {
             $obs = $_POST['observation'] ?? '';
             $uploader_name = $_SESSION['username'];
             
-            // Vai direto para o Gestor Financeiro
             $status = 'Caixa de Entrada - Gestor Financeiro';
             $ano_atual = date('Y');
             
-            // Diretório Físico de Destino
             $upload_dir = __DIR__ . "/../../public/uploads/{$ano_atual}/{$protocol}";
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
 
@@ -129,12 +127,12 @@ class DocumentController {
             
             $obs = trim($_POST['new_observation'] ?? '');
             
-            // Trava apenas se for REJEIÇÃO
+            // 🟢 CORREÇÃO: Remove a "Tela Vermelha" e faz um redirecionamento sutil caso passe pelo Javascript
             if ($action === 'rejeitar' && empty($obs)) {
-                die("<div style='padding:20px; font-family:sans-serif; background:#dc3545; color:white;'><h1>⚠️ Erro Tático</h1><p>O despacho é OBRIGATÓRIO para devolver ou rejeitar o processo. Indique o motivo.</p><a href='javascript:history.back()' style='color:white;'>⬅️ Voltar</a></div>");
+                header("Location: /view?id=" . $doc_id . "&aviso=falta_parecer");
+                exit();
             }
             
-            // Se aprovar vazio, coloca texto padrão
             if ($action === 'aprovar' && empty($obs)) {
                 $obs = "Processo verificado e tramitado.";
             }
@@ -153,7 +151,6 @@ class DocumentController {
 
             $acao_str = ($action === 'aprovar') ? 'APROVADO' : 'REJEITADO';
             
-            // Formatar Cargo para a Timeline
             $cargo = $role;
             if ($role === 'Gestor_Financeiro') $cargo = 'Gestor Financeiro';
             if ($role === 'Gestor_Financeiro_Substituto') $cargo = 'Gestor Financeiro Substituto';
@@ -168,19 +165,14 @@ class DocumentController {
             $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, ?, ?)");
             $stmt->execute([$doc_id, $username, strtoupper($action), $obs]);
 
-            // 🟢 LÓGICA TÁTICA ATUALIZADA (Pontos 1 e 3 da Chefia)
             if ($action === 'rejeitar') {
                 if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto'])) {
-                    // O Gestor devolve para a base (Operador)
                     $status = 'Devolvido - Operador'; 
                 } else {
-                    // Qualquer outra Chefia que rejeitar, devolve para o Gestor Financeiro
                     $status = 'Devolvido - Gestor Financeiro'; 
                 }
             } elseif ($action === 'aprovar') {
-                // Se estiver na Caixa do Gestor (Normal ou Devolvido)
                 if ($status === 'Caixa de Entrada - Gestor Financeiro' || $status === 'Devolvido - Gestor Financeiro') {
-                    // Se o Gestor ativou substituição, salta o Chefe e vai para o Agente Fiscal
                     if ($is_sub && in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto'])) {
                         $status = 'Caixa de Entrada - Agente Fiscal';
                     } else {
