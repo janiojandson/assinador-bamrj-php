@@ -1,7 +1,7 @@
 <?php
 /**
  * FRONT CONTROLLER - ASSINADOR BAMRJ
- * Versão Final: Rotas Táticas, Arquivo Legado, Radar de Inbox e SSO
+ * Versão Final: Rotas Táticas, Arquivo Legado, Radar de Inbox, SSO e Substituto Persistente
  */
 
 ini_set('display_errors', 1);
@@ -41,6 +41,12 @@ switch ($uri) {
         require __DIR__ . '/../app/views/setup_password.php';
         break;
 
+    case '/trocar_senha':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        $authCtrl = new \App\Controllers\AuthController();
+        $authCtrl->trocarSenha();
+        break;
+
     case '/logout':
         session_destroy();
         header("Location: /login");
@@ -49,7 +55,15 @@ switch ($uri) {
 
     case '/toggle_substitute':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        $_SESSION['is_substitute'] = !($_SESSION['is_substitute'] ?? false);
+        // 🔄 Persiste no BD — fonte de verdade
+        $db = \App\Core\Database::getConnection();
+        $stmt = $db->prepare("SELECT substituto_ativo FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $estado_atual = (bool)($stmt->fetchColumn() ?? false);
+        $novo_estado = !$estado_atual;
+        $db->prepare("UPDATE users SET substituto_ativo = ? WHERE id = ?")
+           ->execute([$novo_estado ? TRUE : FALSE, $_SESSION['user_id']]);
+        $_SESSION['is_substitute'] = $novo_estado;
         header("Location: /index");
         exit();
         break;    
@@ -90,6 +104,21 @@ switch ($uri) {
         require __DIR__ . '/../app/views/viewer.php';
         break;
 
+    case '/edit':
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Operador', 'Admin'])) { header("Location: /index"); exit(); }
+        $docCtrl = new \App\Controllers\DocumentController();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $docCtrl->handleEdit();
+        } else {
+            require __DIR__ . '/../app/views/edit.php';
+        }
+        break;
+
+    case '/edit_process':
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Operador', 'Admin'])) { header("Location: /index"); exit(); }
+        require __DIR__ . '/../app/views/edit_process.php';
+        break;
+
     case '/arquivo':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         require __DIR__ . '/../app/views/arquivo.php';
@@ -99,63 +128,50 @@ switch ($uri) {
         \App\Controllers\ArchiveController::simulatePublicAccess();
         break;
 
-    case '/process_action':
-        $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->processAction(); 
-        break;
-
-    case '/cancel':
-        $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->cancelProcess(); 
-        break;
-
-    case '/upload_ne':
-        $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->uploadNE(); 
-        break;
-
-    case '/edit':
-        $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->editProcess(); 
-        break;
-
-    case '/api/check_inbox':
-        header('Content-Type: application/json');
-        if (!isset($_SESSION['user_id'])) { echo json_encode(['count' => 0]); exit; }
-        $dashCtrl = new \App\Controllers\DashboardController();
-        $data = $dashCtrl->getDashboardData(); 
-        echo json_encode(['count' => $data['inbox_count'] ?? 0]);
-        break;
-
     case '/admin':
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
         require __DIR__ . '/../app/views/admin_users.php';
         break;
 
-    case '/admin/delete':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
-        $adminCtrl = new \App\Controllers\AdminController();
-        $adminCtrl->deleteUser($_GET['id'] ?? 0);
+    case '/api/check_inbox':
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id'])) { echo json_encode(['count' => 0]); exit(); }
+        
+        $db = \App\Core\Database::getConnection();
+        $role = $_SESSION['role'] ?? '';
+        
+        // 🔄 Sincroniza substituto com BD
+        $stmt_sub = $db->prepare("SELECT substituto_ativo FROM users WHERE id = ?");
+        $stmt_sub->execute([$_SESSION['user_id']]);
+        $is_substitute = (bool)($stmt_sub->fetchColumn() ?? false);
+        $_SESSION['is_substitute'] = $is_substitute;
+        
+        $count = 0;
+        if ($role === 'Operador') {
+            $stmt = $db->query("SELECT COUNT(*) FROM documents WHERE status NOT IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado')");
+            $count = (int)$stmt->fetchColumn();
+        } elseif (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])) {
+            $status_map = [
+                'Gestor_Financeiro' => ['Caixa de Entrada - Gestor Financeiro'],
+                'Gestor_Financeiro_Substituto' => ['Caixa de Entrada - Gestor Financeiro'],
+                'Chefe_Departamento' => ['Aguardando Assinatura - Chefe Departamento'],
+                'Agente_Fiscal' => ['Aguardando Assinatura - Agente Fiscal'],
+                'Ordenador_Despesas' => ['Aguardando Assinatura - Ordenador'],
+            ];
+            $statuses = $status_map[$role] ?? [];
+            if (!empty($statuses)) {
+                $in = str_repeat('?,', count($statuses) - 1) . '?';
+                $stmt = $db->prepare("SELECT COUNT(*) FROM documents WHERE status IN ($in)");
+                $stmt->execute($statuses);
+                $count = (int)$stmt->fetchColumn();
+            }
+        }
+        echo json_encode(['count' => $count]);
+        exit();
         break;
 
-    case '/admin/reset_docs':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
-        $adminCtrl = new \App\Controllers\AdminController();
-        $adminCtrl->resetDocs();
-        break;
-
-    case '/admin/factory_reset':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
-        $adminCtrl = new \App\Controllers\AdminController();
-        $adminCtrl->factoryReset();
-        break;
-    
     default:
         http_response_code(404);
-        echo "<div style='padding:40px; font-family:sans-serif; text-align:center;'>
-                <h1 style='color:#d32f2f;'>⚠️ 404 - ALERTA DE ROTA</h1>
-                <p>A página que tentou aceder não existe no perímetro do Assinador-BAMRJ.</p>
-                <a href='/index' style='padding:10px 20px; background:#00447c; color:white; text-decoration:none; border-radius:4px;'>Voltar à Base</a>
-              </div>";
+        echo "<h1>404 - Página não encontrada</h1><a href='/'>Voltar ao início</a>";
         break;
 }
