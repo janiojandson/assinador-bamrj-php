@@ -1,11 +1,9 @@
 <?php
 $page_title = 'Configuração de Senha - Assinador BAMRJ';
-$hide_navbar = true; // Oculta o menu para focar na troca de senha
+$hide_navbar = true;
 require __DIR__ . '/partials/header.php';
 
-// Instancia o AuthController para processar a troca de senha
 $auth = new \App\Controllers\AuthController();
-// Tenta rodar a função de troca (se o seu método tiver outro nome, ajuste aqui, ex: changePassword)
 $error = method_exists($auth, 'setupPassword') ? $auth->setupPassword() : ''; 
 ?>
 
@@ -41,11 +39,8 @@ $error = method_exists($auth, 'setupPassword') ? $auth->setupPassword() : '';
         </form>
         
         <div style="margin-top: 25px; font-size: 0.9em;">
-            <a href="/logout" style="color: #dc3545; text-decoration: none; font-weight: bold; padding: 8px 15px; border-radius: 4px; border: 1px solid #dc3545; transition: 0.2s;">
-                🚪 Cancelar e Sair
-            </a>
+            <a href="/logout" style="color: #dc3545; text-decoration: none; font-weight: bold; padding: 8px 15px; display: inline-block;">🚪 Sair e Cancelar</a>
         </div>
-        
     </div>
 </div>
 
