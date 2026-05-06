@@ -5,7 +5,8 @@ CREATE TABLE users (
     username VARCHAR(64) UNIQUE NOT NULL,
     password_hash VARCHAR(256) NOT NULL,
     role VARCHAR(64) NOT NULL,
-    must_change_password BOOLEAN DEFAULT TRUE
+    must_change_password BOOLEAN DEFAULT TRUE,
+    substituto_ativo BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE documents (
