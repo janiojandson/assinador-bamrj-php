@@ -1,11 +1,10 @@
 /* =========================================================
-   CSS TÁTICO GLOBAL - ASSINADOR BAMRJ
+   CSS TÁTICO GLOBAL — UNIFICADO SIGEF + ASSINADOR BAMRJ
    Arquiteto: Blindagem Responsiva (Mobile First)
+   Design: Marinha Azul (#002244) + Dourado (#ffcc00)
 ========================================================= */
 
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 /* Tabelas responsivas (permite rolagem horizontal natural) */
 .table-responsive {
@@ -28,12 +27,12 @@
     .navbar-logo {
         flex-direction: column;
         gap: 10px !important;
-        align-items: center !important; /* 🛡️ Trava contra esticamento */
+        align-items: center !important;
     }
     .navbar-logo img {
-        width: auto !important; /* 🛡️ Impede que a imagem ocupe 100% da tela */
+        width: auto !important;
         max-width: 100%;
-        height: 65px !important; /* Um pouco maior para destaque no telemóvel */
+        height: 65px !important;
         object-fit: contain;
     }
     .navbar-links {
@@ -101,18 +100,70 @@
     /* 6. Textos e Tabelas */
     h2, h3 { font-size: 1.2em !important; text-align: center; }
     td, th { padding: 8px !important; font-size: 0.9em; }
-    
-    /* Modal de Upload Mobile */
-    #modal {
-        padding: 15px !important;
-    }
+}
 
-    /* 🛡️ 7. Conserto do Brasão Cortado no Visualizador (sidebar-right) */
-    .sidebar-right img[alt="BAMRJ"] {
-        max-width: 80px !important;
-        height: auto !important;
-        object-fit: contain;
-        margin: 0 auto 15px auto !important; /* Centraliza a imagem */
-        display: block !important;
-    }
+/* =========================================================
+   🟡 BANNER DE MODO SUBSTITUTO (Persistente no Topo)
+========================================================= */
+.banner-substituto {
+    background: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+    color: #002244;
+    text-align: center;
+    padding: 10px 20px;
+    font-weight: bold;
+    font-size: 1em;
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    animation: pulso-substituto 2.5s infinite ease-in-out;
+}
+
+.banner-substituto a,
+.banner-substituto form button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: 0.2s;
+}
+.banner-substituto a:hover,
+.banner-substituto form button:hover {
+    background: #c82333;
+}
+
+@keyframes pulso-substituto {
+    0%   { box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
+    50%  { box-shadow: 0 3px 20px rgba(255, 153, 0, 0.6); }
+    100% { box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
+}
+
+/* =========================================================
+   🔍 FILTROS EM TEMPO REAL
+========================================================= */
+.filtro-real {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #004488;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 500;
+    transition: border-color 0.3s;
+    outline: none;
+}
+.filtro-real:focus {
+    border-color: #ffcc00;
+    box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.3);
+}
+.filtro-real::placeholder {
+    color: #999;
 }
