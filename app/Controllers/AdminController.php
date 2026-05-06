@@ -19,12 +19,12 @@ class AdminController {
     public function listUsers() {
         $this->checkAdminAccess();
         $db = Database::getConnection();
-        $stmt = $db->prepare("SELECT id, name, username, role, must_change_password FROM users ORDER BY name ASC");
+        $stmt = $db->prepare("SELECT id, name, username, role, must_change_password, substituto_ativo FROM users ORDER BY name ASC");
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    // ➕ Cria novo utilizador
+    // ➕ Cria novo utilizador — SEM restrições de senha
     public function handleCreate() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
             $this->checkAdminAccess();
@@ -33,13 +33,17 @@ class AdminController {
             $password = $_POST['password'] ?? '';
             $role = $_POST['role'] ?? 'Operador';
 
+            if (empty($password)) {
+                die("<script>alert('A senha não pode estar vazia.'); history.back();</script>");
+            }
+
             $db = Database::getConnection();
             $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");
             $stmt->execute([$username]);
             if ($stmt->fetch()) die("<h1>Erro Crítico</h1><p>Este utilizador já existe.</p><a href='/admin'>Voltar</a>");
 
             $hash = password_hash($password, PASSWORD_BCRYPT);
-            $sql = "INSERT INTO users (name, username, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, TRUE)";
+            $sql = "INSERT INTO users (name, username, password_hash, role, must_change_password, substituto_ativo) VALUES (?, ?, ?, ?, TRUE, FALSE)";
             $stmt = $db->prepare($sql);
             $stmt->execute([$name, $username, $hash, $role]);
 
@@ -48,7 +52,7 @@ class AdminController {
         }
     }
 
-    // ✏️ Edita o perfil ou senha do utilizador
+    // ✏️ Edita o perfil ou senha do utilizador — SEM restrições de senha
     public function handleEdit() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit') {
             $this->checkAdminAccess();
@@ -74,165 +78,28 @@ class AdminController {
 
     // 🔄 Tática de Atualização: Roda comandos SQL direto pelo painel web
     public function handleMigration() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'migrate_db') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'migrate_db') {
+            $this->checkAdminAccess();
             $db = Database::getConnection();
             
             try {
                 $db->beginTransaction();
-
-                // 1. Atualiza os processos antigos que ficaram com a nomenclatura velha
-                $stmt1 = $db->prepare("UPDATE documents SET status = 'Caixa de Entrada - Gestor Financeiro' WHERE status = 'Caixa de Entrada - Enc. Finanças'");
-                $stmt1->execute();
-
-                // 2. Atualiza a estrutura da tabela para que os novos processos já nasçam corretos
-                $stmt2 = $db->prepare("ALTER TABLE documents ALTER COLUMN status SET DEFAULT 'Caixa de Entrada - Gestor Financeiro'");
-                $stmt2->execute();
-
+                
+                $migracoes = [
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS substituto_ativo BOOLEAN DEFAULT FALSE;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT TRUE;",
+                ];
+                
+                foreach ($migracoes as $sql) {
+                    $db->exec($sql);
+                }
+                
                 $db->commit();
-                
-                // Exibe um alerta de sucesso e recarrega a página
-                echo "<script>alert('✅ Patch Tático Aplicado! O Banco de Dados foi atualizado para a nova nomenclatura.'); window.location.href='/admin';</script>";
-                exit();
-                
+                die("<script>alert('✅ Migrações aplicadas com sucesso!'); location.href='/admin';</script>");
             } catch (\Exception $e) {
                 $db->rollBack();
-                die("<div style='padding:20px; background:#dc3545; color:white;'><h1>⚠️ Erro na Migração</h1><p>" . $e->getMessage() . "</p></div>");
+                die("<script>alert('❌ Erro na migração: " . addslashes($e->getMessage()) . "'); history.back();</script>");
             }
-        }
-    }
-
-    // ❌ Elimina o utilizador
-    public function deleteUser($id) {
-        $this->checkAdminAccess();
-        $db = Database::getConnection();
-        
-        $stmt = $db->prepare("SELECT username FROM users WHERE id = ?");
-        $stmt->execute([$id]);
-        $user = $stmt->fetch();
-
-        // Blindagem para não apagar o próprio admin
-        if ($user && $user['username'] !== 'admin') {
-            $stmt = $db->prepare("DELETE FROM users WHERE id = ?");
-            $stmt->execute([$id]);
-        }
-        header("Location: /admin");
-        exit();
-    }
-
-    // ==========================================
-    // ⚠️ ZONA DE PERIGO (Lógica de Limpeza)
-    // ==========================================
-
-    // Função auxiliar: Apaga todos os PDFs físicos
-    private function clearUploadsFolder() {
-        $dir = __DIR__ . '/../../public/uploads/';
-        if (!is_dir($dir)) return;
-        
-        $files = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($files as $fileinfo) {
-            // Proteção para o repositório git não quebrar
-            if ($fileinfo->getFilename() === '.gitkeep') continue;
-            
-            $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
-            $todo($fileinfo->getRealPath());
-        }
-    }
-
-    // 🧹 Limpa apenas processos e arquivos (WIPE DADOS)
-    public function resetDocs() {
-        $this->checkAdminAccess();
-        $db = Database::getConnection();
-        
-        // TRUNCATE com CASCADE limpa as tabelas de documentos instantaneamente
-        $db->exec("TRUNCATE TABLE documents RESTART IDENTITY CASCADE");
-        
-        // Apaga os PDFs físicos
-        $this->clearUploadsFolder();
-        
-        header("Location: /admin");
-        exit();
-    }
-
-    // 💣 Formatação Total do Sistema (FACTORY RESET)
-    public function factoryReset() {
-        $this->checkAdminAccess();
-        $db = Database::getConnection();
-        try {
-            // 1. Destruição Tática
-            $db->exec("DROP TABLE IF EXISTS document_files CASCADE;");
-            $db->exec("DROP TABLE IF EXISTS events CASCADE;");
-            $db->exec("DROP TABLE IF EXISTS documents CASCADE;");
-            $db->exec("DROP TABLE IF EXISTS users CASCADE;");
-
-            // 2. Destruição de Arquivos Físicos
-            $this->clearUploadsFolder();
-
-            // 3. Reconstrução Estrutural
-            $db->exec("
-                CREATE TABLE users (
-                    id SERIAL PRIMARY KEY,
-                    name VARCHAR(128) NOT NULL,
-                    username VARCHAR(64) UNIQUE NOT NULL,
-                    password_hash VARCHAR(256) NOT NULL,
-                    role VARCHAR(64) NOT NULL,
-                    must_change_password BOOLEAN DEFAULT TRUE
-                );
-
-                CREATE TABLE documents (
-                    id SERIAL PRIMARY KEY,
-                    protocol VARCHAR(32) UNIQUE NOT NULL,
-                    name VARCHAR(128) NOT NULL,
-                    cpf_cnpj VARCHAR(20),
-                    solemp VARCHAR(50),
-                    status VARCHAR(64) DEFAULT 'Caixa de Entrada - Enc. Finanças',
-                    is_priority BOOLEAN DEFAULT FALSE,
-                    current_observation TEXT,
-                    uploader_name VARCHAR(64),
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-
-                CREATE TABLE events (
-                    id SERIAL PRIMARY KEY,
-                    document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
-                    user_name VARCHAR(64),
-                    action VARCHAR(64) NOT NULL,
-                    observation TEXT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-
-                CREATE TABLE document_files (
-                    id SERIAL PRIMARY KEY,
-                    document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
-                    filename VARCHAR(256) NOT NULL,
-                    file_type VARCHAR(64) NOT NULL
-                );
-            ");
-
-            // 4. Criação do Master Admin (Senha admin123)
-            $hash = password_hash('admin123', PASSWORD_BCRYPT);
-            $stmt = $db->prepare("INSERT INTO users (name, username, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, false)");
-            $stmt->execute(['Administrador', 'admin', $hash, 'Admin']);
-
-            // 5. Destrói a sessão atual para forçar login
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_destroy();
-            }
-
-            // Exibe a tela de sucesso da formatação
-            echo "<div style='background:#28a745;color:white;padding:20px;font-family:sans-serif;text-align:center;margin-top:50px;border-radius:8px;max-width:600px;margin-left:auto;margin-right:auto;'>
-                    <h1>✅ Senhor! Sistema formatado com sucesso!</h1>
-                    <p>As tabelas foram reconstruídas e os ficheiros PDF apagados. O utilizador <b>admin</b> com a senha <b>admin123</b> foi restaurado.</p>
-                    <br>
-                    <a href='/login' style='background:white;color:#28a745;padding:10px 20px;text-decoration:none;font-weight:bold;border-radius:4px;'>Fazer Login</a>
-                  </div>";
-        } catch (\Exception $e) {
-            echo "<div style='background:#dc3545;color:white;padding:20px;font-family:sans-serif;'>
-                    <h1>⚠️ Falha na Criação Estrutural</h1>
-                    <p>" . htmlspecialchars($e->getMessage()) . "</p>
-                  </div>";
         }
     }
 }
