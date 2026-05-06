@@ -14,7 +14,6 @@ $inbox_count = $dados['inbox_count'];
 ?>
 
 <style>
-/* 🌟 ALERTA VISUAL SUTIL E EDUCADO */
 @keyframes pulso-suave {
     0%   { background-color: #ffcc00; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     50%  { background-color: #ffe066; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.6); }
@@ -34,7 +33,6 @@ $inbox_count = $dados['inbox_count'];
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #004488; flex-wrap: wrap; gap: 15px;">
     <div>
         <?php 
-        // Formata o nome do perfil visualmente para a tela inicial
         $role_display = $role;
         if ($role === 'Gestor_Financeiro') $role_display = 'Gestor Financeiro';
         if ($role === 'Gestor_Financeiro_Substituto') $role_display = 'Gestor Financeiro Substituto';
@@ -50,242 +48,101 @@ $inbox_count = $dados['inbox_count'];
     </div>
     <div style="display: flex; gap: 10px; width: 100%; justify-content: flex-end;">
         <?php if (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal'])): ?>
-            <a href="/toggle_substitute" style="background: #ffcc00; color: #002244; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; text-align: center;">
-                <?= $is_substitute ? '⬅️ Desativar Substituição' : '⚡ Ativar Substituição Superior' ?>
+            <a href="/toggle_substitute" style="background: <?= $is_substitute ? '#dc3545' : '#ffcc00' ?>; color: <?= $is_substitute ? 'white' : '#002244' ?>; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; text-align: center;">
+                <?= $is_substitute ? '❌ Desativar Substituição' : '⚡ Ativar Substituição Superior' ?>
             </a>
         <?php endif; ?>
-        
-        <form action="/" method="GET" style="display: flex; gap: 5px;">
-            <select name="ano" id="filtro-ano-dash" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; color: #002244;"></select>
-            <input type="text" name="q" placeholder="Buscar SOLEMP, CNPJ..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; width: 250px; border-radius: 4px;">
-            <button type="submit" style="padding: 10px 15px; background: #004488; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍</button>
-        </form>
     </div>
 </div>
 
-<?php if ($role === 'Admin'): ?>
-<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #dc3545; margin-bottom: 20px;">
-    <h3 style="margin-top: 0; color: #002244;">🛡️ Gestão de Utilizadores</h3>
-    
-    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #ddd;">
-        <h4 style="margin-top:0; color: #333;">➕ Cadastrar Novo Utilizador</h4>
-        <form action="/admin" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="hidden" name="action" value="create">
-            <input type="text" name="name" placeholder="Nome Completo" required style="padding: 10px; flex: 1.5; border: 1px solid #ccc; border-radius: 4px;">
-            <input type="text" name="username" placeholder="NIP / Login" required style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;">
-            <input type="password" name="password" placeholder="Senha Inicial" required style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;">
-            <select name="role" required style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 4px;">
-                <option value="Operador">Operador</option>
-                <option value="Gestor_Financeiro">Gestor Financeiro</option>
-                <option value="Gestor_Financeiro_Substituto">Gestor Fin. Substituto</option>
-                <option value="Chefe_Departamento">Chefe de Departamento</option>
-                <option value="Agente_Fiscal">Agente Fiscal</option>
-                <option value="Ordenador_Despesas">Ordenador de Despesas</option>
-                <option value="Admin">Administrador</option>
-                <option value="Usuário Comum">Usuário Comum</option>
-            </select>
-            <button type="submit" style="background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px;">Salvar</button>
-        </form>
-    </div>
-
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
-            <thead><tr style="text-align: left; background: #f8f9fa; border-bottom: 2px solid #ddd;"><th style="padding: 10px;">Nome</th><th style="padding: 10px;">Utilizador</th><th style="padding: 10px;">Perfil</th><th style="padding: 10px;">Ações</th></tr></thead>
-            <tbody>
-                <?php foreach ($users as $u): ?>
-                <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 10px;"><?= htmlspecialchars($u['name']) ?></td>
-                    <td style="padding: 10px;"><b><?= htmlspecialchars($u['username']) ?></b></td>
-                    <td style="padding: 10px;">
-                        <form action="/admin" method="POST" style="display: inline;">
-                            <input type="hidden" name="action" value="edit">
-                            <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                            <select name="role" onchange="this.form.submit()" style="padding: 5px; border-radius: 3px;">
-                                <option value="Admin" <?= $u['role'] == 'Admin' ? 'selected' : '' ?>>Administrador</option>
-                                <option value="Operador" <?= $u['role'] == 'Operador' ? 'selected' : '' ?>>Operador</option>
-                                <option value="Gestor_Financeiro" <?= $u['role'] == 'Gestor_Financeiro' ? 'selected' : '' ?>>Gestor Financeiro</option>
-                                <option value="Gestor_Financeiro_Substituto" <?= $u['role'] == 'Gestor_Financeiro_Substituto' ? 'selected' : '' ?>>Gestor Fin. Substituto</option>
-                                <option value="Chefe_Departamento" <?= $u['role'] == 'Chefe_Departamento' ? 'selected' : '' ?>>Chefe Depto</option>
-                                <option value="Agente_Fiscal" <?= $u['role'] == 'Agente_Fiscal' ? 'selected' : '' ?>>Agente Fiscal</option>
-                                <option value="Ordenador_Despesas" <?= $u['role'] == 'Ordenador_Despesas' ? 'selected' : '' ?>>Ordenador de Despesas</option>
-                                <option value="Usuário Comum" <?= $u['role'] == 'Usuário Comum' ? 'selected' : '' ?>>Usuário Comum</option>
-                            </select>
-                        </form>
-                    </td>
-                    <td style="padding: 10px;">
-                        <?php if ($u['username'] !== 'admin'): ?>
-                            <a href="/admin/delete?id=<?= $u['id'] ?>" style="color: #dc3545; text-decoration: none; font-weight: bold;" onclick="return confirm('Excluir utilizador?')">❌ Excluir</a>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
+<?php if ($role === 'Admin' && !empty($users)): ?>
+<section style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #00447c;">
+    <h3 style="color: #00447c; margin-top: 0;">🛡️ Painel do Administrador</h3>
+    <a href="/admin" class="btn btn-primary" style="margin-top: 10px;">📋 Gerenciar Utilizadores</a>
+    <a href="/upload_legado" class="btn btn-info" style="margin-top: 10px;">📁 Upload Legado</a>
+</section>
 <?php endif; ?>
 
 <?php if ($role === 'Operador'): ?>
-<div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-    <button onclick="document.getElementById('modal').style.display='block'" style="background: #28a745; color: white; padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">➕ Iniciar Novo Processo</button>
-    <a href="/upload_legado" style="background: #f39c12; color: white; padding: 12px 20px; text-decoration: none; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📄 Inserir Acervo Histórico</a>
-    <a href="/arquivo" style="background: #6c757d; color: white; padding: 12px 20px; text-decoration: none; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🗄️ Acessar Arquivo Geral</a>
-</div>
-
-<div id="modal" style="display: none; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-left: 10px solid #28a745; margin-bottom: 20px;">
-    <h3 style="margin-top:0; color: #002244;">📄 Abertura de Demanda</h3>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="protocol" value="<?= $pre_protocol ?>">
-        <p style="background: #e9ecef; padding: 10px; border-radius: 5px; border-left: 4px solid #6c757d;"><strong>Protocolo Gerado:</strong> <code style="font-size: 1.1em; color: #d32f2f;"><?= $pre_protocol ?></code></p>
-        
-        <input type="text" name="process_name" placeholder="Assunto do Processo" required style="width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
-        
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <input type="text" name="cpf_cnpj" placeholder="CPF ou CNPJ (Opcional)" style="flex: 1; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
-            <input type="text" name="solemp" placeholder="Nº da SOLEMP (Opcional)" style="flex: 1; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+<section style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #28a745;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <h3 style="margin: 0; color: #28a745;">⚡ Ações Rápidas do Operador</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/upload" class="btn btn-success">📄 Novo Processo</a>
+            <a href="/upload_legado" class="btn btn-info">📁 Upload Legado</a>
         </div>
-
-        <label style="display: inline-block; margin-bottom: 15px; background: #fff3cd; padding: 8px 12px; border-radius: 4px; border: 1px solid #ffeeba; cursor: pointer;"><input type="checkbox" name="priority" value="1"> 🚩 Marcar como Processo Prioritário</label>
-        
-        <div style="display: flex; gap: 20px; margin-bottom: 15px;">
-            <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px dashed #ccc;">
-                <label><b>Minutas (PDF):</b></label><br>
-                <input type="file" id="m-in" accept="application/pdf" multiple style="margin-top:10px; width: 100%;">
-                <ul id="m-list" style="font-size: 0.85em; color: #666; padding-left: 20px; margin-top: 10px;"></ul>
-                <input type="file" name="minutas[]" id="m-hidden" multiple style="display: none;">
-            </div>
-            <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px dashed #ccc;">
-                <label><b>Anexos Diversos (PDF):</b></label><br>
-                <input type="file" id="a-in" accept="application/pdf" multiple style="margin-top:10px; width: 100%;">
-                <ul id="a-list" style="font-size: 0.85em; color: #666; padding-left: 20px; margin-top: 10px;"></ul>
-                <input type="file" name="anexos[]" id="a-hidden" multiple style="display: none;">
-            </div>
-        </div>
-        <textarea name="observation" placeholder="Despacho inicial ou observações..." style="width: 100%; height: 80px; margin-bottom: 15px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;"></textarea>
-        
-        <div style="display: flex; gap: 10px;">
-            <button type="submit" style="background: #004488; color: white; padding: 12px 25px; border: none; cursor: pointer; font-weight: bold; flex: 2; border-radius: 4px;">Gerar e Tramitar</button>
-            <button type="button" onclick="document.getElementById('modal').style.display='none'" style="background: #dc3545; color: white; border: none; padding: 12px 20px; cursor: pointer; flex: 1; border-radius: 4px; font-weight: bold;">Cancelar</button>
-        </div>
-    </form>
-</div>
+    </div>
+    <?php if (!empty($pre_protocol)): ?>
+    <div style="margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; font-family: monospace; font-size: 0.9em;">
+        Último protocolo gerado: <b><?= htmlspecialchars($pre_protocol) ?></b>
+    </div>
+    <?php endif; ?>
+</section>
 <?php endif; ?>
 
-<?php if ($role !== 'Admin'): ?>
-<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <?php if (empty($documents)): ?>
-        <h3 style="text-align: center; color: #666; padding: 40px 0;">Nenhum processo pendente na sua caixa de entrada.</h3>
-    <?php else: ?>
-        <h3 style="margin-top: 0; color: #002244; border-bottom: 2px solid #eee; padding-bottom: 10px;">📂 Processos Encontrados / Caixa de Entrada</h3>
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; min-width: 900px; margin-top: 10px;">
-                <thead>
-                    <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; text-align: left;">
-                        <th style="padding: 12px;">Prior.</th>
-                        <th style="padding: 12px;">Protocolo</th>
-                        <th style="padding: 12px;">Assunto</th>
-                        <th style="padding: 12px;">Status</th>
-                        <th style="padding: 12px; text-align: right;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($documents as $doc): ?>
-                    <tr style="border-bottom: 1px solid #eee; <?= $doc['is_priority'] ? 'background: #fff5f5;' : '' ?> transition: 0.2s;">
-                        <td style="padding: 12px; text-align: center;"><?= $doc['is_priority'] ? '🚩' : '🏳️' ?></td>
-                        <td style="padding: 12px;"><code style="color: #d32f2f; font-weight: bold;"><?= htmlspecialchars($doc['protocol']) ?></code></td>
-                        <td style="padding: 12px;"><b><?= htmlspecialchars($doc['name']) ?></b><br><small style="color: #666;">SOLEMP: <?= htmlspecialchars($doc['solemp']) ?: '-' ?></small></td>
-                        <td style="padding: 12px;">
-                            <?php
-                            $statusBg = '#e2e3e5'; $statusColor = '#383d41';
-                            if ($doc['status'] === 'Devolvido - Operador') { $statusBg = '#f8d7da'; $statusColor = '#721c24'; }
-                            elseif ($doc['status'] === 'Devolvido - Gestor Financeiro') { $statusBg = '#f5c6cb'; $statusColor = '#721c24'; }
-                            elseif ($doc['status'] === 'Aguardando Empenho - Operador') { $statusBg = '#d4edda'; $statusColor = '#155724'; }
-                            ?>
-                            <span style="font-size: 0.85em; padding: 6px 10px; border-radius: 4px; font-weight: bold; background: <?= $statusBg ?>; color: <?= $statusColor ?>;">
-                                <?= htmlspecialchars($doc['status']) ?>
-                            </span>
-                        </td>
-                        <td style="padding: 12px; display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
-                            
-                            <a href="/view?id=<?= $doc['id'] ?>" style="background: #004488; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.9em;">Abrir</a>
-                            
-                            <?php if ($role === 'Operador'): ?>
-                                <?php if ($doc['status'] === 'Devolvido - Operador'): ?>
-                                    <a href="/edit?id=<?= $doc['id'] ?>" style="background: #ffcc00; color: #002244; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.9em;">✏️ Corrigir</a>
-                                <?php endif; ?>
-
-                                <form action="/cancel?id=<?= $doc['id'] ?>" method="POST" onsubmit="return confirm('Deseja realmente CANCELAR este processo permanentemente?');" style="margin: 0;">
-                                    <button type="submit" style="background: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; font-weight: bold;">Cancelar</button>
-                                </form>
-                                
-                                <?php if ($doc['status'] === 'Aguardando Empenho - Operador'): ?>
-                                    <form action="/upload_ne?id=<?= $doc['id'] ?>" method="POST" enctype="multipart/form-data" style="margin: 0; display: flex; gap: 5px; align-items: center; background: #e9ecef; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
-                                        <select name="final_status" required style="padding: 6px; font-size: 0.85em; border-radius: 3px; border: 1px solid #ccc;">
-                                            <option value="Arquivado">Arquivar</option>
-                                            <option value="Reforçado">Reforçado</option>
-                                            <option value="Anulado">Anulado</option>
-                                        </select>
-                                        <input type="file" id="ne-in-<?= $doc['id'] ?>" name="nota_empenho" required accept="application/pdf" style="display: none;" onchange="document.getElementById('ne-btn-<?= $doc['id'] ?>').style.display='block'">
-                                        <button type="button" onclick="document.getElementById('ne-in-<?= $doc['id'] ?>').click()" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 3px; border: none; cursor: pointer; font-size: 0.85em; font-weight: bold;">📎 Anexar NE</button>
-                                        <button type="submit" id="ne-btn-<?= $doc['id'] ?>" style="background: #28a745; color: white; padding: 6px 15px; border: none; border-radius: 3px; cursor: pointer; font-size: 0.9em; font-weight: bold; display: none;">Salvar NE</button>
-                                    </form>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif; ?>
-</div>
-<?php endif; ?> 
+<?php if (!empty($documents)): ?>
+<section style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #004488;">
+    <h3 style="color: #004488; margin-top: 0;">📥 Caixa de Entrada (<?= count($documents) ?>)</h3>
+    
+    <div style="margin-bottom: 15px;">
+        <input type="text" id="filtroDashboard" class="filtro-real" placeholder="🔍 Filtrar por Protocolo, NE, CNPJ ou Status..." onkeyup="filtrarDashboard()">
+    </div>
+    
+    <div class="table-responsive">
+        <table id="tabelaDashboard" style="width: 100%; border-collapse: collapse; min-width: 800px; font-size: 0.9em;">
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
+                <th style="padding: 10px;">Protocolo</th>
+                <th style="padding: 10px;">NE / Assunto</th>
+                <th style="padding: 10px;">CNPJ</th>
+                <th style="padding: 10px;">Status</th>
+                <th style="padding: 10px; text-align: right;">Ação</th>
+            </tr>
+            <?php foreach ($documents as $doc): ?>
+            <tr class="linha-doc" style="border-bottom: 1px solid #eee; <?= ($doc['is_priority'] ?? false) ? 'background: #fff5f5;' : '' ?>">
+                <td style="padding: 10px;"><code style="color: #d32f2f; font-weight: bold;"><?= htmlspecialchars($doc['protocol']) ?></code></td>
+                <td style="padding: 10px;"><?= htmlspecialchars($doc['name']) ?> <?= ($doc['is_priority'] ?? false) ? '🚩' : '' ?></td>
+                <td style="padding: 10px; font-family: monospace;"><?= htmlspecialchars($doc['cpf_cnpj'] ?? '-') ?></td>
+                <td style="padding: 10px;">
+                    <span class="badge <?= in_array($doc['status'], ['Arquivado', 'Reforçado']) ? 'badge-aviso' : 'badge-alerta' ?>">
+                        <?= htmlspecialchars($doc['status']) ?>
+                    </span>
+                </td>
+                <td style="padding: 10px; text-align: right;">
+                    <a href="/view?id=<?= $doc['id'] ?>" class="btn btn-primary" style="font-size: 0.85em;">👁️ Ver</a>
+                    <?php if (in_array($role, ['Operador', 'Admin']) && in_array($doc['status'], ['Devolvido pelo Chefe', 'Devolvido pelo Agente', 'Devolvido pelo Ordenador'])): ?>
+                        <a href="/edit?id=<?= $doc['id'] ?>" class="btn btn-warning" style="font-size: 0.85em;">✏️ Corrigir</a>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </table>
+    </div>
+</section>
 
 <script>
-const selectAno = document.getElementById('filtro-ano-dash');
-const anoAtual = new Date().getFullYear();
-const urlParams = new URLSearchParams(window.location.search);
-const anoPesq = urlParams.get('ano');
-
-for (let ano = 2026; ano <= Math.max(2026, anoAtual); ano++) {
-    let opt = document.createElement('option');
-    opt.value = ano; opt.innerHTML = ano;
-    if (anoPesq && parseInt(anoPesq) === ano) opt.selected = true;
-    else if (!anoPesq && ano === anoAtual) opt.selected = true;
-    selectAno.appendChild(opt);
-}
-
-const dtM = new DataTransfer(), dtA = new DataTransfer();
-function setupFiles(inId, hidId, listId, dt) {
-    const inp = document.getElementById(inId), hid = document.getElementById(hidId), list = document.getElementById(listId);
-    if(!inp) return;
-    inp.addEventListener('change', () => { for(let f of inp.files) dt.items.add(f); renderFiles(list, hid, dt); });
-}
-function renderFiles(list, hid, dt) {
-    list.innerHTML = ''; hid.files = dt.files;
-    Array.from(dt.files).forEach((f, i) => {
-        const li = document.createElement('li');
-        li.innerHTML = f.name + ' <b style="cursor:pointer;color:#dc3545;margin-left:10px">[X]</b>';
-        li.querySelector('b').onclick = () => { dt.items.remove(i); renderFiles(list, hid, dt); };
-        list.appendChild(li);
+function filtrarDashboard() {
+    const termo = document.getElementById('filtroDashboard').value.toLowerCase();
+    document.querySelectorAll('.linha-doc').forEach(linha => {
+        const texto = linha.textContent.toLowerCase();
+        linha.style.display = texto.includes(termo) ? '' : 'none';
     });
 }
-setupFiles('m-in', 'm-hidden', 'm-list', dtM);
-setupFiles('a-in', 'a-hidden', 'a-list', dtA);
+</script>
+<?php endif; ?>
 
-let currentInboxCount = <?= $inbox_count ?>;
+<script>
+// Radar de Inbox
 setInterval(function() {
-    fetch('/api/check_inbox?t=' + new Date().getTime())
-        .then(response => response.json())
+    fetch('/api/check_inbox')
+        .then(r => r.json())
         .then(data => {
-            if (data.count !== currentInboxCount) {
-                const alerta = document.getElementById('alerta-novo-doc');
+            const alerta = document.getElementById('alerta-novo-doc');
+            if (data.count > 0) {
                 alerta.style.display = 'block';
                 alerta.classList.add('alerta-piscando');
             }
-        })
-        .catch(err => console.error("Falha no radar:", err));
-}, 60000); 
+        });
+}, 30000);
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
