@@ -61,8 +61,9 @@ switch ($uri) {
         $stmt->execute([$_SESSION['user_id']]);
         $estado_atual = (bool)($stmt->fetchColumn() ?? false);
         $novo_estado = !$estado_atual;
+        // 🐛 FIX: Usa 1/0 em vez de TRUE/FALSE para compatibilidade com PostgreSQL via PDO
         $db->prepare("UPDATE users SET substituto_ativo = ? WHERE id = ?")
-           ->execute([$novo_estado ? TRUE : FALSE, $_SESSION['user_id']]);
+           ->execute([$novo_estado ? 1 : 0, $_SESSION['user_id']]);
         $_SESSION['is_substitute'] = $novo_estado;
         header("Location: /index");
         exit();
@@ -85,38 +86,18 @@ switch ($uri) {
             $upCtrl = new \App\Controllers\UploadController();
             $upCtrl->handleUpload(); 
         } else {
-            require __DIR__ . '/../app/views/upload_process.php'; 
+            require __DIR__ . '/../app/views/upload_process.php';
         }
         break;
-        
+
     case '/upload_legado':
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Operador', 'Admin'])) { header("Location: /index"); exit(); }
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /index"); exit(); }
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upCtrl = new \App\Controllers\UploadController();
-            $upCtrl->handleLegacyUpload(); 
+            $upCtrl->handleLegacyUpload();
         } else {
             require __DIR__ . '/../app/views/upload_legacy.php';
         }
-        break;
-
-    case '/view':
-        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        require __DIR__ . '/../app/views/viewer.php';
-        break;
-
-    case '/edit':
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Operador', 'Admin'])) { header("Location: /index"); exit(); }
-        $docCtrl = new \App\Controllers\DocumentController();
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $docCtrl->handleEdit();
-        } else {
-            require __DIR__ . '/../app/views/edit.php';
-        }
-        break;
-
-    case '/edit_process':
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Operador', 'Admin'])) { header("Location: /index"); exit(); }
-        require __DIR__ . '/../app/views/edit_process.php';
         break;
 
     case '/arquivo':
@@ -124,54 +105,28 @@ switch ($uri) {
         require __DIR__ . '/../app/views/arquivo.php';
         break;
 
-    case '/acesso_publico':
-        \App\Controllers\ArchiveController::simulatePublicAccess();
+    case '/edit':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        require __DIR__ . '/../app/views/edit.php';
         break;
 
-    case '/admin':
+    case '/edit_process':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        require __DIR__ . '/../app/views/edit_process.php';
+        break;
+
+    case '/viewer':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        require __DIR__ . '/../app/views/viewer.php';
+        break;
+
+    case '/admin_users':
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
         require __DIR__ . '/../app/views/admin_users.php';
         break;
 
-    case '/api/check_inbox':
-        header('Content-Type: application/json');
-        if (!isset($_SESSION['user_id'])) { echo json_encode(['count' => 0]); exit(); }
-        
-        $db = \App\Core\Database::getConnection();
-        $role = $_SESSION['role'] ?? '';
-        
-        // 🔄 Sincroniza substituto com BD
-        $stmt_sub = $db->prepare("SELECT substituto_ativo FROM users WHERE id = ?");
-        $stmt_sub->execute([$_SESSION['user_id']]);
-        $is_substitute = (bool)($stmt_sub->fetchColumn() ?? false);
-        $_SESSION['is_substitute'] = $is_substitute;
-        
-        $count = 0;
-        if ($role === 'Operador') {
-            $stmt = $db->query("SELECT COUNT(*) FROM documents WHERE status NOT IN ('Arquivado', 'Cancelado', 'Anulado', 'Reforçado')");
-            $count = (int)$stmt->fetchColumn();
-        } elseif (in_array($role, ['Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'])) {
-            $status_map = [
-                'Gestor_Financeiro' => ['Caixa de Entrada - Gestor Financeiro'],
-                'Gestor_Financeiro_Substituto' => ['Caixa de Entrada - Gestor Financeiro'],
-                'Chefe_Departamento' => ['Aguardando Assinatura - Chefe Departamento'],
-                'Agente_Fiscal' => ['Aguardando Assinatura - Agente Fiscal'],
-                'Ordenador_Despesas' => ['Aguardando Assinatura - Ordenador'],
-            ];
-            $statuses = $status_map[$role] ?? [];
-            if (!empty($statuses)) {
-                $in = str_repeat('?,', count($statuses) - 1) . '?';
-                $stmt = $db->prepare("SELECT COUNT(*) FROM documents WHERE status IN ($in)");
-                $stmt->execute($statuses);
-                $count = (int)$stmt->fetchColumn();
-            }
-        }
-        echo json_encode(['count' => $count]);
-        exit();
-        break;
-
     default:
         http_response_code(404);
-        echo "<h1>404 - Página não encontrada</h1><a href='/'>Voltar ao início</a>";
+        echo "<h1>404 - Página não encontrada</h1><p>A rota <code>" . htmlspecialchars($uri) . "</code> não existe.</p><a href='/'>Voltar ao início</a>";
         break;
 }
