@@ -1,10 +1,11 @@
 <?php
+// 🔐 Processa o login ANTES de qualquer output HTML
+$auth = new \App\Controllers\AuthController();
+$error = $auth->login();
+
 $page_title = 'Login - Assinador BAMRJ';
 $hide_navbar = true; // Oculta a barra do topo na tela de login
 require __DIR__ . '/partials/header.php';
-
-$auth = new \App\Controllers\AuthController();
-$error = $auth->login();
 ?>
 <div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
     <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; border-top: 5px solid #002244;">
