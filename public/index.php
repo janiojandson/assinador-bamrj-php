@@ -36,6 +36,14 @@ switch ($uri) {
     case '/login': 
         require __DIR__ . '/../app/views/login.php'; 
         break;
+
+    // 🐛 FIX: Rota /acesso_publico — Consulta Pública sem autenticação
+    // O link "Consulta Pública" na tela de login aponta para /acesso_publico
+    // ArchiveController::simulatePublicAccess() cria sessão fantasma e redireciona para /arquivo
+    case '/acesso_publico':
+        $archiveCtrl = new \App\Controllers\ArchiveController();
+        $archiveCtrl->simulatePublicAccess();
+        break;
     
     case '/setup_password':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
