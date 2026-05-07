@@ -2,6 +2,7 @@
 /**
  * FRONT CONTROLLER - ASSINADOR BAMRJ
  * Versão Final: Rotas Táticas, Arquivo Legado, Radar de Inbox, SSO e Substituto Persistente
+ * 🐛 FIX: Adicionada rota /view como alias para /viewer (Bug de 404 na navegação)
  */
 
 ini_set('display_errors', 1);
@@ -115,6 +116,9 @@ switch ($uri) {
         require __DIR__ . '/../app/views/edit_process.php';
         break;
 
+    // 🐛 FIX Bug #1: Rota /view agora funciona como alias para /viewer
+    // Antes: /view?id=1 dava 404 porque só existia /viewer
+    case '/view':
     case '/viewer':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         require __DIR__ . '/../app/views/viewer.php';

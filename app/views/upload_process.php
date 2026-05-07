@@ -14,6 +14,8 @@ $suggestedProtocol = "BAMRJ-{$dateStr}-{$randomId}";
     .file-list-item { background: #ecf0f1; padding: 8px 12px; margin-top: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; border: 1px solid #bdc3c7;}
     .remove-file { color: #e74c3c; cursor: pointer; font-weight: bold; padding: 0 5px; }
     .remove-file:hover { color: #c0392b; }
+    .upload-section { background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; margin-bottom: 15px; }
+    .upload-section h4 { margin: 0 0 10px 0; color: #002244; }
 </style>
 
 <div style="max-width: 800px; margin: 20px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 4px solid #00447c;">
@@ -56,10 +58,17 @@ $suggestedProtocol = "BAMRJ-{$dateStr}-{$randomId}";
             <textarea name="observation" rows="3" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;"></textarea>
         </div>
 
-        <div style="margin-bottom: 15px;">
-            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Arquivos (PDF, Imagens, etc.):</label>
-            <input type="file" name="files[]" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-            <div id="fileList" style="margin-top: 10px;"></div>
+        <!-- 🐛 FIX Bug #2: Dois campos de upload separados com suporte a múltiplos ficheiros -->
+        <div class="upload-section">
+            <h4>📝 Minutas (Documentos Principais)</h4>
+            <input type="file" name="minutas[]" id="minutasInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div id="minutasList" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="upload-section">
+            <h4>📎 Outros (Anexos Complementares)</h4>
+            <input type="file" name="anexos[]" id="anexosInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div id="anexosList" style="margin-top: 10px;"></div>
         </div>
 
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
@@ -70,16 +79,22 @@ $suggestedProtocol = "BAMRJ-{$dateStr}-{$randomId}";
 </div>
 
 <script>
-document.getElementById('fileInput').addEventListener('change', function(e) {
-    const fileList = document.getElementById('fileList');
-    fileList.innerHTML = '';
-    for (let i = 0; i < this.files.length; i++) {
-        const div = document.createElement('div');
-        div.className = 'file-list-item';
-        div.innerHTML = '<span>📎 ' + this.files[i].name + ' (' + (this.files[i].size / 1024).toFixed(1) + ' KB)</span><span class="remove-file" onclick="this.parentElement.remove(); document.getElementById(\'fileInput\').value=\'\';">✕</span>';
-        fileList.appendChild(div);
-    }
-});
+// 🐛 FIX: Preview de ficheiros para ambos os campos
+function setupFilePreview(inputId, listId) {
+    document.getElementById(inputId).addEventListener('change', function(e) {
+        const fileList = document.getElementById(listId);
+        fileList.innerHTML = '';
+        for (let i = 0; i < this.files.length; i++) {
+            const div = document.createElement('div');
+            div.className = 'file-list-item';
+            div.innerHTML = '<span>📎 ' + this.files[i].name + ' (' + (this.files[i].size / 1024).toFixed(1) + ' KB)</span><span class="remove-file" data-input="' + inputId + '" data-index="' + i + '">✕</span>';
+            fileList.appendChild(div);
+        }
+    });
+}
+
+setupFilePreview('minutasInput', 'minutasList');
+setupFilePreview('anexosInput', 'anexosList');
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
