@@ -9,7 +9,12 @@ if (!in_array($role, ['Operador', 'Admin'])) {
 }
 ?>
 <div style="max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #f39c12;">
-    <h2 style="color: #002244; margin-top: 0;">📄 Inserir Acervo Histórico (Legado)</h2>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <h2 style="color: #002244; margin: 0;">📄 Inserir Acervo Histórico (Legado)</h2>
+        <a href="/" class="btn-nav-inicio">🏠 Tela Inicial</a>
+    </div>
+
     <p style="color: #666; margin-bottom: 25px;">Utilize esta ferramenta padronizada para digitalizar processos antigos. Eles irão diretamente para o Arquivo Geral e Consulta Pública com o status "Arquivado".</p>
 
     <?php if (isset($_GET['success']) && $_GET['success'] == '1'): ?>
@@ -46,21 +51,26 @@ if (!in_array($role, ['Operador', 'Admin'])) {
                 <input type="text" name="cpf_cnpj" placeholder="Apenas números" style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
             </div>
             <div style="flex: 1; min-width: 200px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Nº da SOLEMP/NE (Opcional)</label>
-                <input type="text" name="solemp" placeholder="Pode deixar vazio" style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Número do Documento Fiscal *</label>
+                <input type="text" name="num_doc_fiscal" placeholder="Ex: NF 1234" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; border: 1px dashed #f39c12; margin-bottom: 25px;">
-            <label style="font-weight: bold; display: block; margin-bottom: 10px; color: #d35400;">📄 Documento Final / Nota de Empenho (PDF) *</label>
-            <input type="file" name="documento[]" required accept="application/pdf" style="width: 100%;">
-            <small style="color: #666; display: block; margin-top: 5px;">Este arquivo ficará disponível para download imediato na Consulta Pública.</small>
+        <div style="margin-bottom: 20px;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Observação Inicial</label>
+            <textarea name="observation" rows="3" placeholder="Informações adicionais sobre o processo..." style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;"></textarea>
         </div>
-        
-        <div style="display: flex; gap: 10px;">
-            <button type="submit" style="background: #f39c12; color: white; padding: 12px 25px; border: none; cursor: pointer; font-weight: bold; flex: 2; border-radius: 4px; font-size: 1.05em;">🗄️ Arquivar Documento Histórico</button>
-            <a href="/index" style="background: #6c757d; color: white; text-align: center; text-decoration: none; padding: 12px 20px; flex: 1; border-radius: 4px; font-weight: bold; font-size: 1.05em; display: inline-block; box-sizing: border-box;">Cancelar e Voltar</a>
+
+        <div style="margin-bottom: 20px;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Arquivo Digitalizado (PDF, Imagem) *</label>
+            <input type="file" name="arquivo" accept=".pdf,.jpg,.jpeg,.png,.gif" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <a href="/" style="padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">Cancelar</a>
+            <button type="submit" style="padding: 10px 20px; background: #f39c12; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">📦 Arquivar Documento</button>
         </div>
     </form>
 </div>
+
 <?php require __DIR__ . '/partials/footer.php'; ?>
