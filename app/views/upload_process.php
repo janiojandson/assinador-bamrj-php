@@ -18,6 +18,11 @@ $suggestedProtocol = "BAMRJ-{$dateStr}-{$randomId}";
 
 <div style="max-width: 800px; margin: 20px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-top: 4px solid #00447c;">
     
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="color: #002244; margin: 0;">📄 Inserir Novo Documento</h2>
+        <a href="/" class="btn-nav-inicio">🏠 Tela Inicial</a>
+    </div>
+
     <?php if ($error): ?>
         <div style="background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
             <?php echo htmlspecialchars($error); ?>
@@ -51,63 +56,30 @@ $suggestedProtocol = "BAMRJ-{$dateStr}-{$randomId}";
             <textarea name="observation" rows="3" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;"></textarea>
         </div>
 
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px dashed #00447c;">
-            <label style="font-weight: bold; color: #00447c; display: block; margin-bottom: 10px;">📄 Minutas (PDF):</label>
-            <input type="file" name="minutas[]" multiple accept=".pdf" required style="margin-bottom: 15px; width: 100%;">
-            
-            <hr style="border-top: 1px solid #ddd; margin: 15px 0;">
-
-            <label style="font-weight: bold; color: #555; display: block; margin-bottom: 10px;">📄 Empenhos Assinados (Opcional nesta fase):</label>
-            <input type="file" name="anexos[]" multiple accept=".pdf" id="empenho-input" style="width: 100%;">
-            <div id="empenho-file-list" style="margin-top: 10px;"></div>
+        <div style="margin-bottom: 15px;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Arquivos (PDF, Imagens, etc.):</label>
+            <input type="file" name="files[]" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div id="fileList" style="margin-top: 10px;"></div>
         </div>
 
-        <div style="margin-top: 15px; background: #fff5f5; padding: 15px; border-left: 4px solid #e74c3c; border-radius: 4px;">
-            <input type="checkbox" name="priority" id="priority">
-            <label for="priority" style="color: #e74c3c; font-weight: bold; cursor: pointer;"> 🚩 Marcar como Prioridade Alta</label>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <a href="/" style="padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">Cancelar</a>
+            <button type="submit" style="padding: 10px 20px; background: #00447c; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">📤 Enviar Documento</button>
         </div>
-
-        <button type="submit" style="width: 100%; margin-top: 20px; height: 50px; background: #00447c; color: white; font-weight: bold; font-size: 1.1em; border: none; border-radius: 4px; cursor: pointer;">
-            LANÇAR PROCESSO NA REDE
-        </button>
     </form>
 </div>
 
 <script>
-    // Motor JS Vanilla para gestão de múltiplos ficheiros (Empenhos)
-    const empenhoInput = document.getElementById('empenho-input');
-    const fileListContainer = document.getElementById('empenho-file-list');
-    let dataTransfer = new DataTransfer();
-
-    empenhoInput.addEventListener('change', function() {
-        for(let file of this.files) {
-            dataTransfer.items.add(file);
-        }
-        this.files = dataTransfer.files;
-        renderFileList();
-    });
-
-    function renderFileList() {
-        fileListContainer.innerHTML = '';
-        Array.from(dataTransfer.files).forEach((file, index) => {
-            let div = document.createElement('div');
-            div.className = 'file-list-item';
-            div.innerHTML = `<span>📄 ${file.name}</span> <span class="remove-file" onclick="removeFile(${index})" title="Remover Ficheiro">✖</span>`;
-            fileListContainer.appendChild(div);
-        });
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
+    for (let i = 0; i < this.files.length; i++) {
+        const div = document.createElement('div');
+        div.className = 'file-list-item';
+        div.innerHTML = '<span>📎 ' + this.files[i].name + ' (' + (this.files[i].size / 1024).toFixed(1) + ' KB)</span><span class="remove-file" onclick="this.parentElement.remove(); document.getElementById(\'fileInput\').value=\'\';">✕</span>';
+        fileList.appendChild(div);
     }
-
-    function removeFile(indexToRemove) {
-        let newDataTransfer = new DataTransfer();
-        Array.from(dataTransfer.files).forEach((file, index) => {
-            if (index !== indexToRemove) {
-                newDataTransfer.items.add(file);
-            }
-        });
-        dataTransfer = newDataTransfer;
-        empenhoInput.files = dataTransfer.files;
-        renderFileList();
-    }
+});
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
