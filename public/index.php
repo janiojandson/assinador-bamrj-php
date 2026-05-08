@@ -132,6 +132,15 @@ switch ($uri) {
         require __DIR__ . '/../app/views/viewer.php';
         break;
 
+    // 🐛 FIX: Rota /process_action — Os botões Aprovar/Rejeitar na view viewer.php
+    // fazem POST para /process_action?id=X mas esta rota NÃO EXISTIA no router.
+    // O método DocumentController::processAction() já existe e faz todo o processamento.
+    case '/process_action':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        $docCtrl = new \App\Controllers\DocumentController();
+        $docCtrl->processAction();
+        break;
+
     case '/admin_users':
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
         require __DIR__ . '/../app/views/admin_users.php';
