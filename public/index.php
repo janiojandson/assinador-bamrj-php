@@ -146,6 +146,25 @@ switch ($uri) {
         require __DIR__ . '/../app/views/admin_users.php';
         break;
 
+    // 🩹 TRANSPLANTE LEGADO: Rotas de gestão de utilizadores e manutenção do sistema
+    case '/admin/delete_user':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        $adminCtrl = new \App\Controllers\AdminController();
+        $adminCtrl->deleteUser($_GET['id'] ?? 0);
+        break;
+
+    case '/admin/reset_docs':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        $adminCtrl = new \App\Controllers\AdminController();
+        $adminCtrl->resetDocs();
+        break;
+
+    case '/admin/factory_reset':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        $adminCtrl = new \App\Controllers\AdminController();
+        $adminCtrl->factoryReset();
+        break;
+
     default:
         http_response_code(404);
         echo "<h1>404 - Página não encontrada</h1><p>A rota <code>" . htmlspecialchars($uri) . "</code> não existe.</p><a href='/'>Voltar ao início</a>";
