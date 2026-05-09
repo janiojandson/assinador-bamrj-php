@@ -3,6 +3,7 @@
  * FRONT CONTROLLER - ASSINADOR BAMRJ
  * Versão Final: Rotas Táticas, Arquivo Legado, Radar de Inbox, SSO e Substituto Persistente
  * 🐛 FIX: Adicionada rota /view como alias para /viewer (Bug de 404 na navegação)
+ * 🗑️ FASE 4: Adicionada rota POST /cancelar_processo (Cancelamento pelo Operador)
  */
 
 ini_set('display_errors', 1);
@@ -38,8 +39,6 @@ switch ($uri) {
         break;
 
     // 🐛 FIX: Rota /acesso_publico — Consulta Pública sem autenticação
-    // O link "Consulta Pública" na tela de login aponta para /acesso_publico
-    // ArchiveController::simulatePublicAccess() cria sessão fantasma e redireciona para /arquivo
     case '/acesso_publico':
         $archiveCtrl = new \App\Controllers\ArchiveController();
         $archiveCtrl->simulatePublicAccess();
@@ -95,18 +94,36 @@ switch ($uri) {
             $upCtrl = new \App\Controllers\UploadController();
             $upCtrl->handleUpload(); 
         } else {
-            require __DIR__ . '/../app/views/upload_process.php';
+            require __DIR__ . '/../app/views/upload_process.php'; 
         }
         break;
-
+        
     case '/upload_legado':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /index"); exit(); }
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['Operador', 'Admin'])) { header("Location: /index"); exit(); }
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upCtrl = new \App\Controllers\UploadController();
-            $upCtrl->handleLegacyUpload();
+            $upCtrl->handleLegacyUpload(); 
         } else {
             require __DIR__ . '/../app/views/upload_legacy.php';
         }
+        break;
+
+    case '/view':
+    case '/viewer':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        require __DIR__ . '/../app/views/viewer.php';
+        break;
+
+    case '/edit':
+        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
+        require __DIR__ . '/../app/views/edit_process.php';
+        break;
+
+    // 🗑️ FASE 4: Rota POST para Cancelar Processo (Operador)
+    case '/cancelar_processo':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Operador') { header("Location: /index"); exit(); }
+        $docCtrl = new \App\Controllers\DocumentController();
+        $docCtrl->cancelarProcesso();
         break;
 
     case '/arquivo':
@@ -114,59 +131,19 @@ switch ($uri) {
         require __DIR__ . '/../app/views/arquivo.php';
         break;
 
-    case '/edit':
-        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        require __DIR__ . '/../app/views/edit.php';
-        break;
-
-    case '/edit_process':
-        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        require __DIR__ . '/../app/views/edit_process.php';
-        break;
-
-    // 🐛 FIX Bug #1: Rota /view agora funciona como alias para /viewer
-    // Antes: /view?id=1 dava 404 porque só existia /viewer
-    case '/view':
-    case '/viewer':
-        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        require __DIR__ . '/../app/views/viewer.php';
-        break;
-
-    // 🐛 FIX: Rota /process_action — Os botões Aprovar/Rejeitar na view viewer.php
-    // fazem POST para /process_action?id=X mas esta rota NÃO EXISTIA no router.
-    // O método DocumentController::processAction() já existe e faz todo o processamento.
-    case '/process_action':
-        if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
-        $docCtrl = new \App\Controllers\DocumentController();
-        $docCtrl->processAction();
-        break;
-
-    case '/admin_users':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
-        require __DIR__ . '/../app/views/admin_users.php';
-        break;
-
-    // 🩹 TRANSPLANTE LEGADO: Rotas de gestão de utilizadores e manutenção do sistema
-    case '/admin/delete_user':
+    case '/admin/users':
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
         $adminCtrl = new \App\Controllers\AdminController();
-        $adminCtrl->deleteUser($_GET['id'] ?? 0);
+        $adminCtrl->users();
         break;
 
-    case '/admin/reset_docs':
+    case '/migrate':
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
-        $adminCtrl = new \App\Controllers\AdminController();
-        $adminCtrl->resetDocs();
-        break;
-
-    case '/admin/factory_reset':
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
-        $adminCtrl = new \App\Controllers\AdminController();
-        $adminCtrl->factoryReset();
+        require __DIR__ . '/../app/views/migrate.php';
         break;
 
     default:
         http_response_code(404);
-        echo "<h1>404 - Página não encontrada</h1><p>A rota <code>" . htmlspecialchars($uri) . "</code> não existe.</p><a href='/'>Voltar ao início</a>";
+        echo "<h1>404 - Página não encontrada</h1><p>A rota solicitada não existe.</p><a href='/index'>Voltar ao início</a>";
         break;
 }
