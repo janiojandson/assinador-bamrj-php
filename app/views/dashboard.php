@@ -24,6 +24,28 @@ $inbox_count = $dados['inbox_count'];
     animation: pulso-suave 2.5s infinite ease-in-out !important;
     border: 1px solid #e6b800 !important;
 }
+/* 🗑️ FASE 4: Estilos do Modal de Cancelamento */
+.modal-cancelar {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+.modal-cancelar.ativo {
+    display: flex;
+}
+.modal-cancelar-conteudo {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border-top: 5px solid #dc3545;
+}
 </style>
 
 <div id="alerta-novo-doc" style="display: none; background: #ffcc00; color: #002244; padding: 12px; text-align: center; font-weight: bold; margin-bottom: 20px; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="location.reload()">
@@ -52,97 +74,210 @@ $inbox_count = $dados['inbox_count'];
                 <?= $is_substitute ? '❌ Desativar Substituição' : '⚡ Ativar Substituição Superior' ?>
             </a>
         <?php endif; ?>
+        <?php if ($role === 'Operador'): ?>
+            <a href="/upload" style="background: #28a745; color: white; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold;">📤 Novo Processo</a>
+            <a href="/upload_legado" style="background: #6c757d; color: white; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold;">📁 Upload Legado</a>
+        <?php endif; ?>
+        <a href="/arquivo" style="background: #004488; color: white; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold;">🗄️ Arquivo</a>
+        <a href="/logout" style="background: #dc3545; color: white; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold;">🚪 Sair</a>
     </div>
 </div>
 
-<?php if ($role === 'Admin' && !empty($users)): ?>
-<section style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #00447c;">
-    <h3 style="color: #00447c; margin-top: 0;">🛡️ Painel do Administrador</h3>
-    <a href="/admin" class="btn btn-primary" style="margin-top: 10px;">📋 Gerenciar Utilizadores</a>
-    <a href="/upload_legado" class="btn btn-info" style="margin-top: 10px;">📁 Upload Legado</a>
-</section>
-<?php endif; ?>
-
-<?php if ($role === 'Operador'): ?>
-<section style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #28a745;">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <h3 style="margin: 0; color: #28a745;">⚡ Ações Rápidas do Operador</h3>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="/upload" class="btn btn-success">📄 Novo Processo</a>
-            <a href="/upload_legado" class="btn btn-info">📁 Upload Legado</a>
-        </div>
-    </div>
-    <?php if (!empty($pre_protocol)): ?>
-    <div style="margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; font-family: monospace; font-size: 0.9em;">
-        Último protocolo gerado: <b><?= htmlspecialchars($pre_protocol) ?></b>
-    </div>
-    <?php endif; ?>
-</section>
-<?php endif; ?>
-
-<?php if (!empty($documents)): ?>
-<section style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #004488;">
-    <h3 style="color: #004488; margin-top: 0;">📥 Caixa de Entrada (<?= count($documents) ?>)</h3>
-    
-    <div style="margin-bottom: 15px;">
-        <input type="text" id="filtroDashboard" class="filtro-real" placeholder="🔍 Filtrar por Protocolo, NE, CNPJ ou Status..." onkeyup="filtrarDashboard()">
-    </div>
-    
-    <div class="table-responsive">
-        <table id="tabelaDashboard" style="width: 100%; border-collapse: collapse; min-width: 800px; font-size: 0.9em;">
-            <tr style="background: #f8f9fa; border-bottom: 2px solid #002244; text-align: left;">
-                <th style="padding: 10px;">Protocolo</th>
-                <th style="padding: 10px;">NE / Assunto</th>
-                <th style="padding: 10px;">CNPJ</th>
-                <th style="padding: 10px;">Status</th>
-                <th style="padding: 10px; text-align: right;">Ação</th>
+<?php if ($role === 'Admin'): ?>
+    <!-- VISÃO DO ADMIN -->
+    <h2 style="color: #002244;">👥 Gerenciamento de Usuários</h2>
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+            <tr style="background: #002244; color: white;">
+                <th style="padding: 10px;">Nome</th>
+                <th style="padding: 10px;">Usuário</th>
+                <th style="padding: 10px;">Perfil</th>
+                <th style="padding: 10px;">Ações</th>
             </tr>
-            <?php foreach ($documents as $doc): ?>
-            <tr class="linha-doc" style="border-bottom: 1px solid #eee; <?= ($doc['is_priority'] ?? false) ? 'background: #fff5f5;' : '' ?>">
-                <td style="padding: 10px;"><code style="color: #d32f2f; font-weight: bold;"><?= htmlspecialchars($doc['protocol']) ?></code></td>
-                <td style="padding: 10px;"><?= htmlspecialchars($doc['name']) ?> <?= ($doc['is_priority'] ?? false) ? '🚩' : '' ?></td>
-                <td style="padding: 10px; font-family: monospace;"><?= htmlspecialchars($doc['cpf_cnpj'] ?? '-') ?></td>
+            <?php foreach ($users as $u): ?>
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;"><?= htmlspecialchars($u['name']) ?></td>
+                <td style="padding: 10px; font-family: monospace;"><?= htmlspecialchars($u['username']) ?></td>
+                <td style="padding: 10px;"><?= htmlspecialchars($u['role']) ?></td>
                 <td style="padding: 10px;">
-                    <span class="badge <?= in_array($doc['status'], ['Arquivado', 'Reforçado']) ? 'badge-aviso' : 'badge-alerta' ?>">
-                        <?= htmlspecialchars($doc['status']) ?>
-                    </span>
-                </td>
-                <td style="padding: 10px; text-align: right;">
-                    <a href="/view?id=<?= $doc['id'] ?>" class="btn btn-primary" style="font-size: 0.85em;">👁️ Ver</a>
-                    <?php if (in_array($role, ['Operador', 'Admin']) && in_array($doc['status'], ['Devolvido pelo Chefe', 'Devolvido pelo Agente', 'Devolvido pelo Ordenador'])): ?>
-                        <a href="/edit?id=<?= $doc['id'] ?>" class="btn btn-warning" style="font-size: 0.85em;">✏️ Corrigir</a>
-                    <?php endif; ?>
+                    <form method="POST" action="/admin/users" style="display: inline-flex; gap: 5px; align-items: center;">
+                        <input type="hidden" name="action" value="edit">
+                        <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                        <select name="role" style="padding: 5px; border-radius: 3px;">
+                            <?php foreach (['Operador', 'Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas', 'Admin'] as $r): ?>
+                                <option value="<?= $r ?>" <?= $u['role'] === $r ? 'selected' : '' ?>><?= $r ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <input type="password" name="password" placeholder="Nova Senha" style="padding: 5px; width: 120px; border-radius: 3px;">
+                        <button type="submit" style="background: #004488; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">💾</button>
+                    </form>
                 </td>
             </tr>
             <?php endforeach; ?>
         </table>
+        
+        <h3 style="margin-top: 20px; color: #002244;">➕ Criar Novo Usuário</h3>
+        <form method="POST" action="/admin/users" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+            <input type="hidden" name="action" value="create">
+            <div><label style="font-weight: bold; font-size: 0.85em;">Nome:</label><br><input type="text" name="name" required style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; width: 180px;"></div>
+            <div><label style="font-weight: bold; font-size: 0.85em;">Usuário:</label><br><input type="text" name="username" required style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; width: 120px;"></div>
+            <div><label style="font-weight: bold; font-size: 0.85em;">Senha:</label><br><input type="password" name="password" required style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; width: 120px;"></div>
+            <div><label style="font-weight: bold; font-size: 0.85em;">Perfil:</label><br>
+                <select name="role" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <?php foreach (['Operador', 'Gestor_Financeiro', 'Gestor_Financeiro_Substituto', 'Chefe_Departamento', 'Agente_Fiscal', 'Ordenador_Despesas'] as $r): ?>
+                        <option value="<?= $r ?>"><?= $r ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <button type="submit" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">➕ Criar</button>
+        </form>
     </div>
-</section>
 
-<script>
-function filtrarDashboard() {
-    const termo = document.getElementById('filtroDashboard').value.toLowerCase();
-    document.querySelectorAll('.linha-doc').forEach(linha => {
-        const texto = linha.textContent.toLowerCase();
-        linha.style.display = texto.includes(termo) ? '' : 'none';
-    });
-}
-</script>
+<?php elseif ($role === 'Operador'): ?>
+    <!-- VISÃO DO OPERADOR -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="color: #002244; margin: 0;">📋 Processos em Tramitação</h2>
+        <form method="GET" style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" name="q" placeholder="🔍 Buscar por Protocolo, CNPJ ou SOLEMP..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 350px;">
+            <select name="ano" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <?php for($i = date('Y'); $i >= 2020; $i--): ?>
+                    <option value="<?= $i ?>" <?= ($i == ($_GET['ano'] ?? date('Y'))) ? 'selected' : '' ?>><?= $i ?></option>
+                <?php endfor; ?>
+            </select>
+            <button type="submit" style="background: #004488; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍</button>
+        </form>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <?php if (empty($documents)): ?>
+            <p style="text-align: center; color: #666; padding: 30px;">✅ Nenhum processo em tramitação.</p>
+        <?php else: ?>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                <tr style="background: #002244; color: white;">
+                    <th style="padding: 10px;">Protocolo</th>
+                    <th style="padding: 10px;">Assunto</th>
+                    <th style="padding: 10px;">CNPJ / SOLEMP</th>
+                    <th style="padding: 10px;">Status</th>
+                    <th style="padding: 10px;">Prioridade</th>
+                    <th style="padding: 10px;">Ações</th>
+                </tr>
+                <?php foreach ($documents as $doc): ?>
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px; font-family: monospace; font-weight: bold; color: #004488;"><?= htmlspecialchars($doc['protocol']) ?></td>
+                    <td style="padding: 10px;"><?= htmlspecialchars($doc['name']) ?></td>
+                    <td style="padding: 10px; font-size: 0.85em;"><?= htmlspecialchars($doc['cpf_cnpj'] ?? '') ?><br><?= htmlspecialchars($doc['solemp'] ?? '') ?></td>
+                    <td style="padding: 10px;">
+                        <?php
+                        $status_color = '#004488';
+                        if (str_contains($doc['status'], 'Devolvido')) $status_color = '#dc3545';
+                        if (str_contains($doc['status'], 'Arquivado')) $status_color = '#28a745';
+                        ?>
+                        <span style="color: <?= $status_color ?>; font-weight: bold; font-size: 0.85em;"><?= htmlspecialchars($doc['status']) ?></span>
+                    </td>
+                    <td style="padding: 10px; text-align: center;">
+                        <?= $doc['is_priority'] ? '<span style="background:#dc3545; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;">🔴 URG</span>' : 'Normal' ?>
+                    </td>
+                    <td style="padding: 10px;">
+                        <a href="/view?id=<?= $doc['id'] ?>" style="background: #004488; color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px; font-size: 0.85em; font-weight: bold;">👁️ Ver</a>
+                        <?php if (in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Cancelado', 'Anulado', 'Reforçado'])): ?>
+                            <a href="/edit?id=<?= $doc['id'] ?>" style="background: #ffcc00; color: #002244; text-decoration: none; padding: 5px 10px; border-radius: 3px; font-size: 0.85em; font-weight: bold; margin-left: 5px;">✏️ Editar</a>
+                        <?php endif; ?>
+                        <!-- 🗑️ FASE 4: Botão Cancelar Processo -->
+                        <?php if (!in_array($doc['status'], ['Arquivado', 'Cancelado', 'Anulado', 'Reforçado'])): ?>
+                            <button onclick="abrirModalCancelar(<?= $doc['id'] ?>, '<?= htmlspecialchars($doc['protocol']) ?>')" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; font-size: 0.85em; font-weight: bold; cursor: pointer; margin-left: 5px;">🗑️ Cancelar</button>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+        <?php endif; ?>
+    </div>
+
+<?php else: ?>
+    <!-- VISÃO DOS OFICIAIS (Gestor, Chefe, Agente, Ordenador) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="color: #002244; margin: 0;">📥 Caixa de Entrada</h2>
+        <form method="GET" style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" name="q" placeholder="🔍 Buscar..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 300px;">
+            <select name="ano" style="padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <?php for($i = date('Y'); $i >= 2020; $i--): ?>
+                    <option value="<?= $i ?>" <?= ($i == ($_GET['ano'] ?? date('Y'))) ? 'selected' : '' ?>><?= $i ?></option>
+                <?php endfor; ?>
+            </select>
+            <button type="submit" style="background: #004488; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍</button>
+        </form>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <?php if (empty($documents)): ?>
+            <p style="text-align: center; color: #28a745; font-weight: bold; padding: 30px; font-size: 1.2em;">✅ Caixa de Entrada Limpa!</p>
+        <?php else: ?>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                <tr style="background: #002244; color: white;">
+                    <th style="padding: 10px;">Protocolo</th>
+                    <th style="padding: 10px;">Assunto</th>
+                    <th style="padding: 10px;">CNPJ / SOLEMP</th>
+                    <th style="padding: 10px;">Status</th>
+                    <th style="padding: 10px;">Prioridade</th>
+                    <th style="padding: 10px;">Ação</th>
+                </tr>
+                <?php foreach ($documents as $doc): ?>
+                <tr style="border-bottom: 1px solid #eee; <?= $doc['is_priority'] ? 'background: #fff3cd;' : '' ?>">
+                    <td style="padding: 10px; font-family: monospace; font-weight: bold; color: #004488;"><?= htmlspecialchars($doc['protocol']) ?></td>
+                    <td style="padding: 10px;"><?= htmlspecialchars($doc['name']) ?></td>
+                    <td style="padding: 10px; font-size: 0.85em;"><?= htmlspecialchars($doc['cpf_cnpj'] ?? '') ?><br><?= htmlspecialchars($doc['solemp'] ?? '') ?></td>
+                    <td style="padding: 10px; font-weight: bold; color: #004488; font-size: 0.85em;"><?= htmlspecialchars($doc['status']) ?></td>
+                    <td style="padding: 10px; text-align: center;">
+                        <?= $doc['is_priority'] ? '<span style="background:#dc3545; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;">🔴 URG</span>' : 'Normal' ?>
+                    </td>
+                    <td style="padding: 10px;">
+                        <a href="/view?id=<?= $doc['id'] ?>" style="background: #004488; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-weight: bold;">👁️ Analisar e Assinar</a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+        <?php endif; ?>
+    </div>
 <?php endif; ?>
 
+<!-- 🗑️ FASE 4: Modal de Cancelamento de Processo -->
+<div id="modalCancelar" class="modal-cancelar">
+    <div class="modal-cancelar-conteudo">
+        <h3 style="margin-top: 0; color: #dc3545;">🗑️ Cancelar Processo</h3>
+        <div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 4px solid #dc3545;">
+            <strong>⚠️ Ação Irreversível!</strong> Ao cancelar, o processo será encerrado e não poderá ser reaberto pelo fluxo normal.
+        </div>
+        <p>Protocolo: <b id="cancelarProtocolo" style="color: #dc3545;"></b></p>
+        <form method="POST" action="/cancelar_processo" id="formCancelar">
+            <input type="hidden" name="document_id" id="cancelarDocId">
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #002244;">Motivo do Cancelamento (Obrigatório):</label>
+                <textarea name="motivo_cancelamento" required rows="3" style="width: 100%; padding: 10px; border: 1px solid #dc3545; border-radius: 4px; font-size: 1em; margin-top: 5px;" placeholder="Descreva o motivo do cancelamento..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="fecharModalCancelar()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">❌ Voltar</button>
+                <button type="submit" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Confirmar Cancelamento</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-// Radar de Inbox
-setInterval(function() {
-    fetch('/api/check_inbox')
-        .then(r => r.json())
-        .then(data => {
-            const alerta = document.getElementById('alerta-novo-doc');
-            if (data.count > 0) {
-                alerta.style.display = 'block';
-                alerta.classList.add('alerta-piscando');
-            }
-        });
-}, 30000);
+// 🗑️ FASE 4: Funções do Modal de Cancelamento
+function abrirModalCancelar(docId, protocolo) {
+    document.getElementById('cancelarDocId').value = docId;
+    document.getElementById('cancelarProtocolo').textContent = protocolo;
+    document.getElementById('modalCancelar').classList.add('ativo');
+}
+
+function fecharModalCancelar() {
+    document.getElementById('modalCancelar').classList.remove('ativo');
+}
+
+// Fecha o modal ao clicar fora dele
+document.getElementById('modalCancelar').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalCancelar();
+});
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
