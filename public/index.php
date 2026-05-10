@@ -108,6 +108,21 @@ switch ($uri) {
         }
         break;
 
+    case '/process_action':
+        $docCtrl = new \App\Controllers\DocumentController();
+        $docCtrl->processAction(); 
+        break;
+
+    case '/cancel':
+        $docCtrl = new \App\Controllers\DocumentController();
+        $docCtrl->cancelProcess(); 
+        break;
+
+    case '/upload_ne':
+        $docCtrl = new \App\Controllers\DocumentController();
+        $docCtrl->uploadNE(); 
+        break;
+
     case '/view':
     case '/viewer':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
@@ -129,6 +144,37 @@ switch ($uri) {
     case '/arquivo':
         if (!isset($_SESSION['user_id'])) { header("Location: /login"); exit(); }
         require __DIR__ . '/../app/views/arquivo.php';
+        break;
+
+    case '/api/check_inbox':
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id'])) { echo json_encode(['count' => 0]); exit; }
+        $dashCtrl = new \App\Controllers\DashboardController();
+        $data = $dashCtrl->getDashboardData(); 
+        echo json_encode(['count' => $data['inbox_count'] ?? 0]);
+        break;
+
+    case '/admin':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        require __DIR__ . '/../app/views/admin_users.php';
+        break;
+
+    case '/admin/delete':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        $adminCtrl = new \App\Controllers\AdminController();
+        $adminCtrl->deleteUser($_GET['id'] ?? 0);
+        break;
+
+    case '/admin/reset_docs':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        $adminCtrl = new \App\Controllers\AdminController();
+        $adminCtrl->resetDocs();
+        break;
+
+    case '/admin/factory_reset':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') { header("Location: /index"); exit(); }
+        $adminCtrl = new \App\Controllers\AdminController();
+        $adminCtrl->factoryReset();
         break;
 
     case '/admin/users':
