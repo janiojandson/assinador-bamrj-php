@@ -1,14 +1,14 @@
 <?php
-$page_title = 'Corrigir Processo Devolvido';
-require __DIR__ . '/partials/header.php';
-
 $docCtrl = new \App\Controllers\DocumentController();
 
-// Se for POST, tenta atualizar
+// Se for POST, tenta atualizar ANTES de enviar HTML
 $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $error = $docCtrl->updateProcess();
 }
+
+$page_title = 'Corrigir Processo Devolvido';
+require __DIR__ . '/partials/header.php';
 
 // Se for GET, busca os dados para preencher o formulário
 $dados = $docCtrl->getViewerData();

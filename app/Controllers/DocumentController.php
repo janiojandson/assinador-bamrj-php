@@ -378,18 +378,36 @@ class DocumentController {
             $db->prepare("UPDATE documents SET name = ?, cpf_cnpj = ?, solemp = ?, status = ?, current_observation = ? WHERE id = ?")
                ->execute([$name, $cpf_cnpj, $solemp, $novo_status, $obs_formatada, $doc_id]);
             
-            // Processa novos ficheiros se existirem
-            if (!empty($_FILES['novos_arquivos']['name'][0])) {
-                if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-                $total = count($_FILES['novos_arquivos']['name']);
-                for ($i = 0; $i < $total; $i++) {
-                    $tmp_name = $_FILES['novos_arquivos']['tmp_name'][$i];
-                    $file_name = preg_replace("/[^a-zA-Z0-9.-]/", "_", basename($_FILES['novos_arquivos']['name'][$i]));
-                    if (move_uploaded_file($tmp_name, "{$upload_dir}/{$file_name}")) {
-                        $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, ?)")
-                           ->execute([$doc_id, "uploads/{$ano_atual}/reenvio_{$doc_id}/{$file_name}", 'Reenvio']);
+            $stmtDoc = $db->prepare("SELECT protocol, created_at FROM documents WHERE id = ?");
+            $stmtDoc->execute([$doc_id]);
+            $doc = $stmtDoc->fetch(PDO::FETCH_ASSOC);
+
+            if ($doc) {
+                $ano_doc = date('Y', strtotime($doc['created_at']));
+                $protocol_dir = $doc['protocol'];
+            $upload_dir = __DIR__ . "/../../public/uploads/{$ano_doc}/{$protocol_dir}";
+
+            // Helper function to process multiple files
+            $processFiles = function($fileArray, $fileType) use ($db, $doc_id, $upload_dir, $ano_doc, $protocol_dir) {
+                if (!empty($fileArray['name'][0])) {
+                    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+                    $total = count($fileArray['name']);
+                    for ($i = 0; $i < $total; $i++) {
+                        if ($fileArray['error'][$i] === UPLOAD_ERR_OK) {
+                            $tmp_name = $fileArray['tmp_name'][$i];
+                            $file_name = preg_replace("/[^a-zA-Z0-9.-]/", "_", basename($fileArray['name'][$i]));
+                            if (move_uploaded_file($tmp_name, "{$upload_dir}/{$file_name}")) {
+                                $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, ?)")
+                                   ->execute([$doc_id, "uploads/{$ano_doc}/{$protocol_dir}/{$file_name}", $fileType]);
+                            }
+                        }
                     }
                 }
+            };
+
+            // Processa Minutas e Anexos
+            if (isset($_FILES['minutas'])) $processFiles($_FILES['minutas'], 'Minuta');
+            if (isset($_FILES['anexos'])) $processFiles($_FILES['anexos'], 'Anexo');
             }
             
             // Registra o evento
