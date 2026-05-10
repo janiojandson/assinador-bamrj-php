@@ -19,6 +19,10 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
         <h2 style="margin: 0; font-size: 1.5em;">🔍 Consulta Pública de Processos e NE</h2>
         <p style="margin: 5px 0 0 0; font-size: 0.9em;">Acompanhe a tramitação do seu processo. O acesso à Nota de Empenho só é liberado após as assinaturas (Status Arquivado/Reforçado).</p>
     </div>
+<?php else: ?>
+    <div style="margin-bottom: 20px;">
+        <a href="/index" style="background: #6c757d; color: white; text-decoration: none; padding: 10px 20px; border-radius: 4px; font-weight: bold;">⬅️ Voltar ao Dashboard</a>
+    </div>
 <?php endif; ?>
 
 <section style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #00447c;">
@@ -89,7 +93,12 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
                             🔒 Em Tramitação
                         </div>
                     <?php else: ?>
-                        <a href="/view?id=<?php echo $doc['id']; ?>" style="font-weight: bold; color: white; background: #00447c; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9em;">Acessar / Baixar</a>
+                        <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                            <a href="/view?id=<?php echo $doc['id']; ?>" style="font-weight: bold; color: white; background: #00447c; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9em;">Acessar / Baixar</a>
+                            <?php if ($role === 'Operador' && !in_array($doc['status'], ['Cancelado', 'Anulado'])): ?>
+                                <button onclick="abrirModalCancelar(<?= $doc['id'] ?>, '<?= htmlspecialchars($doc['protocol']) ?>')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 0.9em; font-weight: bold; cursor: pointer;">🗑️ Cancelar</button>
+                            <?php endif; ?>
+                        </div>
                     <?php endif; ?>
                 </td>
             </tr>
@@ -103,5 +112,50 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
         </tbody>
     </table>
 </div>
+
+<!-- 🗑️ FASE 4: Modal de Cancelamento de Processo -->
+<?php if ($role === 'Operador'): ?>
+<style>
+.modal-cancelar { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; }
+.modal-cancelar.ativo { display: flex; }
+.modal-cancelar-conteudo { background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-top: 5px solid #dc3545; }
+</style>
+
+<div id="modalCancelar" class="modal-cancelar">
+    <div class="modal-cancelar-conteudo">
+        <h3 style="margin-top: 0; color: #dc3545;">🗑️ Cancelar Processo</h3>
+        <div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 4px solid #dc3545;">
+            <strong>⚠️ Ação Irreversível!</strong> Ao cancelar, o processo será encerrado permanentemente.
+        </div>
+        <p>Protocolo: <b id="cancelarProtocolo" style="color: #dc3545;"></b></p>
+        <form method="POST" action="/cancelar_processo" id="formCancelar">
+            <input type="hidden" name="document_id" id="cancelarDocId">
+            <input type="hidden" name="return_url" value="/arquivo">
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #002244;">Motivo do Cancelamento (Obrigatório):</label>
+                <textarea name="motivo_cancelamento" required rows="3" style="width: 100%; padding: 10px; border: 1px solid #dc3545; border-radius: 4px; font-size: 1em; margin-top: 5px;" placeholder="Descreva o motivo do cancelamento..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="fecharModalCancelar()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">❌ Voltar</button>
+                <button type="submit" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Confirmar Cancelamento</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirModalCancelar(docId, protocolo) {
+    document.getElementById('cancelarDocId').value = docId;
+    document.getElementById('cancelarProtocolo').textContent = protocolo;
+    document.getElementById('modalCancelar').classList.add('ativo');
+}
+function fecharModalCancelar() {
+    document.getElementById('modalCancelar').classList.remove('ativo');
+}
+document.getElementById('modalCancelar').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalCancelar();
+});
+</script>
+<?php endif; ?>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>

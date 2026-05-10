@@ -62,8 +62,9 @@ if (!in_array($role, ['Operador', 'Admin'])) {
         </div>
 
         <div style="margin-bottom: 20px;">
-            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Arquivo Digitalizado (PDF, Imagem) *</label>
-            <input type="file" name="arquivo" accept=".pdf,.jpg,.jpeg,.png,.gif" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Arquivos Digitalizados (PDF, Imagem) *</label>
+            <input type="file" id="legado_in" name="arquivo[]" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;" onchange="updateLegacyFileList(this)">
+            <div id="legado_list" style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;"></div>
         </div>
 
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
@@ -72,5 +73,50 @@ if (!in_array($role, ['Operador', 'Admin'])) {
         </div>
     </form>
 </div>
+
+<script>
+let legacyFiles = [];
+
+function updateLegacyFileList(input) {
+    for (let i = 0; i < input.files.length; i++) {
+        legacyFiles.push(input.files[i]);
+    }
+    renderLegacyFileList();
+}
+
+function removeLegacyFile(index) {
+    legacyFiles.splice(index, 1);
+    renderLegacyFileList();
+}
+
+function renderLegacyFileList() {
+    const listDiv = document.getElementById('legado_list');
+    const input = document.getElementById('legado_in');
+    
+    listDiv.innerHTML = '';
+    const dt = new DataTransfer();
+    
+    legacyFiles.forEach((file, index) => {
+        dt.items.add(file);
+        
+        const fileDiv = document.createElement('div');
+        fileDiv.style.background = '#f8f9fa';
+        fileDiv.style.border = '1px solid #ddd';
+        fileDiv.style.padding = '5px 10px';
+        fileDiv.style.borderRadius = '4px';
+        fileDiv.style.display = 'inline-flex';
+        fileDiv.style.alignItems = 'center';
+        fileDiv.style.justifyContent = 'space-between';
+        
+        fileDiv.innerHTML = `
+            <span>📄 ${file.name}</span>
+            <button type="button" onclick="removeLegacyFile(${index})" style="background: none; border: none; color: #dc3545; font-weight: bold; cursor: pointer; margin-left: 15px;" title="Remover este arquivo">❌</button>
+        `;
+        listDiv.appendChild(fileDiv);
+    });
+    
+    input.files = dt.files;
+}
+</script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>

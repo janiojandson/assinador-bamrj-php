@@ -115,7 +115,8 @@ class DocumentController {
                    ->execute([$doc_id, $usuario, $motivo]);
                 
                 $db->commit();
-                header("Location: /index"); exit();
+                $return_url = $_POST['return_url'] ?? '/index';
+                header("Location: " . $return_url); exit();
                 
             } catch (\Exception $e) {
                 $db->rollBack();

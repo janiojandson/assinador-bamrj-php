@@ -178,7 +178,7 @@ $inbox_count = $dados['inbox_count'];
                         <?= $doc['is_priority'] ? '<span style="background:#dc3545; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;">🔴 URG</span>' : 'Normal' ?>
                     </td>
                     <td style="padding: 10px;">
-                        <a href="/view?id=<?= $doc['id'] ?>" style="background: #004488; color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px; font-size: 0.85em; font-weight: bold;">👁️ Ver</a>
+                        <a href="/view?id=<?= $doc['id'] ?>" style="background: #004488; color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px; font-size: 0.85em; font-weight: bold;">Ver</a>
                         <?php if (in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Cancelado', 'Anulado', 'Reforçado'])): ?>
                             <a href="/edit?id=<?= $doc['id'] ?>" style="background: #ffcc00; color: #002244; text-decoration: none; padding: 5px 10px; border-radius: 3px; font-size: 0.85em; font-weight: bold; margin-left: 5px;">✏️ Editar</a>
                         <?php endif; ?>
@@ -231,7 +231,7 @@ $inbox_count = $dados['inbox_count'];
                         <?= $doc['is_priority'] ? '<span style="background:#dc3545; color:white; padding:2px 6px; border-radius:3px; font-size:0.8em;">🔴 URG</span>' : 'Normal' ?>
                     </td>
                     <td style="padding: 10px;">
-                        <a href="/view?id=<?= $doc['id'] ?>" style="background: #004488; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-weight: bold;">👁️ Analisar e Assinar</a>
+                            <a href="/view?id=<?= $doc['id'] ?>" style="background: #004488; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.9em;">Abrir</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

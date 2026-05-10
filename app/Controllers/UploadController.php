@@ -55,7 +55,7 @@ class UploadController {
 
     // 🟢 Upload do Acervo Histórico (Otimizado para Inserção em Lote)
     public function handleLegacyUpload() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['documento'])) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['arquivo'])) {
             $db = Database::getConnection();
             
             $year = $_POST['ano_referencia'] ?? date('Y');
@@ -85,7 +85,7 @@ class UploadController {
                 $stmt->execute([$protocol, $process_name, $cpf_cnpj, $solemp, $obs_entry, $username, 'Arquivado', $fakeDate]);
                 $docId = $db->lastInsertId();
 
-                $this->saveFiles($docId, $_FILES['documento'], 'Nota de Empenho', $uploadDir, $fullPath);
+                $this->saveFiles($docId, $_FILES['arquivo'], 'Documento Histórico', $uploadDir, $fullPath);
 
                 // 🟢 CRIA O EVENTO HOJE: Garante que a "Última Movimentação" mostre a data e hora do upload real
                 $stmt_event = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'ARQUIVAMENTO_LEGADO', ?)");
