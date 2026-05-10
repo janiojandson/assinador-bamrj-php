@@ -39,7 +39,7 @@ class ArchiveController {
 
         $search_query = trim($_GET['q'] ?? '');
         $search_query_clean = preg_replace('/\D/', '', $search_query);
-        $ano_filtro = $_GET['ano'] ?? date('Y');
+        $ano_filtro = $_GET['ano'] ?? 'todos';
 
         $data['search_query'] = $search_query;
 

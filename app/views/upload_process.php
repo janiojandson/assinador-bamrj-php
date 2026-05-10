@@ -58,6 +58,10 @@ $suggestedProtocol = "BAMRJ-{$dateStr}-{$randomId}";
             <textarea name="observation" rows="3" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;"></textarea>
         </div>
 
+        <label style="display: inline-block; margin-bottom: 20px; background: #fff3cd; padding: 10px 15px; border-radius: 4px; border: 1px solid #ffeeba; cursor: pointer; font-weight: bold;">
+            <input type="checkbox" name="priority" value="1"> 🚩 Marcar como Processo Prioritário (URGENTE)
+        </label>
+
         <!-- 🐛 FIX Bug #2: Dois campos de upload separados com suporte a múltiplos ficheiros -->
         <div class="upload-section">
             <h4>📝 Minutas (Documentos Principais)</h4>

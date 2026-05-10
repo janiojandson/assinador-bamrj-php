@@ -34,9 +34,9 @@ $role = $_SESSION['role'] ?? 'Usuário Comum';
         <div style="flex: 1; min-width: 150px;">
             <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #333;">Ano do Registo:</label>
             <select name="ano" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                <option value="todos" <?php echo (($_GET['ano'] ?? '') === 'todos') ? 'selected' : ''; ?>>Todos os Anos</option>
+                <option value="todos" <?php echo (($_GET['ano'] ?? 'todos') === 'todos') ? 'selected' : ''; ?>>Todos os Anos</option>
                 <?php for($i = date('Y'); $i >= 2020; $i--): ?>
-                    <option value="<?php echo $i; ?>" <?php echo ($i == ($_GET['ano'] ?? date('Y'))) ? 'selected' : ''; ?>><?php echo $i; ?></option>
+                    <option value="<?php echo $i; ?>" <?php echo ($i == ($_GET['ano'] ?? 'todos')) ? 'selected' : ''; ?>><?php echo $i; ?></option>
                 <?php endfor; ?>
             </select>
         </div>
