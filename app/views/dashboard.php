@@ -170,7 +170,7 @@ $inbox_count = $dados['inbox_count'];
                         <?php
                         $status_color = '#004488';
                         if (str_contains($doc['status'], 'Devolvido')) $status_color = '#dc3545';
-                        if (str_contains($doc['status'], 'Arquivado')) $status_color = '#28a745';
+                        if (str_contains($doc['status'], 'Arquivado') || $doc['status'] === 'Aguardando Empenho - Operador') $status_color = '#28a745';
                         ?>
                         <span style="color: <?= $status_color ?>; font-weight: bold; font-size: 0.85em;"><?= htmlspecialchars($doc['status']) ?></span>
                     </td>
@@ -185,6 +185,19 @@ $inbox_count = $dados['inbox_count'];
                         <!-- 🗑️ FASE 4: Botão Cancelar Processo -->
                         <?php if (!in_array($doc['status'], ['Arquivado', 'Cancelado', 'Anulado', 'Reforçado'])): ?>
                             <button onclick="abrirModalCancelar(<?= $doc['id'] ?>, '<?= htmlspecialchars($doc['protocol']) ?>')" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; font-size: 0.85em; font-weight: bold; cursor: pointer; margin-left: 5px;">🗑️ Cancelar</button>
+                        <?php endif; ?>
+
+                        <?php if ($doc['status'] === 'Aguardando Empenho - Operador'): ?>
+                            <form action="/upload_ne?id=<?= $doc['id'] ?>" method="POST" enctype="multipart/form-data" style="margin-top: 10px; display: flex; gap: 5px; align-items: center; background: #e9ecef; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                                <select name="final_status" required style="padding: 6px; font-size: 0.85em; border-radius: 3px; border: 1px solid #ccc;">
+                                    <option value="Arquivado">Arquivar</option>
+                                    <option value="Reforçado">Reforçado</option>
+                                    <option value="Anulado">Anulado</option>
+                                </select>
+                                <input type="file" id="ne-in-<?= $doc['id'] ?>" name="nota_empenho" required accept="application/pdf" style="display: none;" onchange="document.getElementById('ne-btn-<?= $doc['id'] ?>').style.display='block'">
+                                <button type="button" onclick="document.getElementById('ne-in-<?= $doc['id'] ?>').click()" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 3px; border: none; cursor: pointer; font-size: 0.85em; font-weight: bold;">📎 Anexar NE</button>
+                                <button type="submit" id="ne-btn-<?= $doc['id'] ?>" style="background: #28a745; color: white; padding: 6px 15px; border: none; border-radius: 3px; cursor: pointer; font-size: 0.9em; font-weight: bold; display: none;">Salvar NE</button>
+                            </form>
                         <?php endif; ?>
                     </td>
                 </tr>
