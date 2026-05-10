@@ -136,25 +136,34 @@ class DocumentController {
             $stmt->execute([$id]);
             $doc = $stmt->fetch();
 
-            if ($doc && !empty($_FILES['nota_empenho']['name'])) {
+            if ($doc && !empty($_FILES['nota_empenho']['name'][0])) {
                 $ano_doc = date('Y', strtotime($doc['created_at']));
                 $upload_dir = __DIR__ . "/../../public/uploads/{$ano_doc}/{$doc['protocol']}";
                 if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
 
-                $tmp_name = $_FILES['nota_empenho']['tmp_name'];
-                $name = preg_replace("/[^a-zA-Z0-9.-]/", "_", basename($_FILES['nota_empenho']['name']));
-
-                if (move_uploaded_file($tmp_name, "{$upload_dir}/{$name}")) {
-                    $db->beginTransaction();
+                $db->beginTransaction();
+                try {
                     $stmt = $db->prepare("UPDATE documents SET status = ? WHERE id = ?");
                     $stmt->execute([$status_final, $id]);
-                    
-                    $stmt = $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, 'Nota de Empenho')");
-                    $stmt->execute([$id, "uploads/{$ano_doc}/{$doc['protocol']}/{$name}"]);
+
+                    foreach ($_FILES['nota_empenho']['name'] as $index => $originalName) {
+                        if ($_FILES['nota_empenho']['error'][$index] === UPLOAD_ERR_OK) {
+                            $tmp_name = $_FILES['nota_empenho']['tmp_name'][$index];
+                            $name = preg_replace("/[^a-zA-Z0-9.-]/", "_", basename($originalName));
+                            
+                            if (move_uploaded_file($tmp_name, "{$upload_dir}/{$name}")) {
+                                $stmt = $db->prepare("INSERT INTO document_files (document_id, filename, file_type) VALUES (?, ?, 'Nota de Empenho')");
+                                $stmt->execute([$id, "uploads/{$ano_doc}/{$doc['protocol']}/{$name}"]);
+                            }
+                        }
+                    }
 
                     $stmt = $db->prepare("INSERT INTO events (document_id, user_name, action, observation) VALUES (?, ?, 'ANEXAR_NE', ?)");
-                    $stmt->execute([$id, $_SESSION['username'], "Nota de Empenho ({$status_final}) anexada."]);
+                    $stmt->execute([$id, $_SESSION['username'], "Nota de Empenho(s) ({$status_final}) anexada(s)."]);
                     $db->commit();
+                } catch (\Exception $e) {
+                    $db->rollBack();
+                    die("Erro ao anexar NE: " . $e->getMessage());
                 }
             }
             header("Location: /index"); exit();

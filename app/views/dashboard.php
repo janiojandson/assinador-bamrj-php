@@ -13,6 +13,62 @@ $pre_protocol = $dados['pre_protocol'];
 $inbox_count = $dados['inbox_count'];
 ?>
 
+<script>
+let neFilesMap = {};
+
+function updateNeFileList(docId, input) {
+    if (!neFilesMap[docId]) neFilesMap[docId] = [];
+    
+    for (let i = 0; i < input.files.length; i++) {
+        neFilesMap[docId].push(input.files[i]);
+    }
+    renderNeFileList(docId);
+}
+
+function removeNeFile(docId, index) {
+    neFilesMap[docId].splice(index, 1);
+    renderNeFileList(docId);
+}
+
+function renderNeFileList(docId) {
+    const listDiv = document.getElementById('ne-list-' + docId);
+    const input = document.getElementById('ne-in-' + docId);
+    const btnSalvar = document.getElementById('ne-btn-' + docId);
+    
+    listDiv.innerHTML = '';
+    const dt = new DataTransfer();
+    
+    if (neFilesMap[docId]) {
+        neFilesMap[docId].forEach((file, index) => {
+            dt.items.add(file);
+            
+            const fileDiv = document.createElement('div');
+            fileDiv.style.background = '#fff';
+            fileDiv.style.border = '1px solid #ddd';
+            fileDiv.style.padding = '3px 8px';
+            fileDiv.style.borderRadius = '3px';
+            fileDiv.style.display = 'inline-flex';
+            fileDiv.style.alignItems = 'center';
+            fileDiv.style.justifyContent = 'space-between';
+            
+            fileDiv.innerHTML = `
+                <span>📄 ${file.name}</span>
+                <button type="button" onclick="removeNeFile(${docId}, ${index})" style="background: none; border: none; color: #dc3545; font-weight: bold; cursor: pointer; margin-left: 10px;" title="Remover">❌</button>
+            `;
+            listDiv.appendChild(fileDiv);
+        });
+    }
+    
+    input.files = dt.files;
+    
+    if (input.files.length > 0) {
+        btnSalvar.style.display = 'block';
+    } else {
+        btnSalvar.style.display = 'none';
+    }
+}
+</script>
+
 <style>
 @keyframes pulso-suave {
     0%   { background-color: #ffcc00; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -188,16 +244,19 @@ $inbox_count = $dados['inbox_count'];
                         <?php endif; ?>
 
                         <?php if ($doc['status'] === 'Aguardando Empenho - Operador'): ?>
-                            <form action="/upload_ne?id=<?= $doc['id'] ?>" method="POST" enctype="multipart/form-data" style="margin-top: 10px; display: flex; gap: 5px; align-items: center; background: #e9ecef; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
-                                <select name="final_status" required style="padding: 6px; font-size: 0.85em; border-radius: 3px; border: 1px solid #ccc;">
-                                    <option value="Arquivado">Arquivar</option>
-                                    <option value="Reforçado">Reforçado</option>
-                                    <option value="Anulado">Anulado</option>
-                                </select>
-                                <input type="file" id="ne-in-<?= $doc['id'] ?>" name="nota_empenho" required accept="application/pdf" style="display: none;" onchange="document.getElementById('ne-btn-<?= $doc['id'] ?>').style.display='block'">
-                                <button type="button" onclick="document.getElementById('ne-in-<?= $doc['id'] ?>').click()" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 3px; border: none; cursor: pointer; font-size: 0.85em; font-weight: bold;">📎 Anexar NE</button>
-                                <button type="submit" id="ne-btn-<?= $doc['id'] ?>" style="background: #28a745; color: white; padding: 6px 15px; border: none; border-radius: 3px; cursor: pointer; font-size: 0.9em; font-weight: bold; display: none;">Salvar NE</button>
-                            </form>
+                            <div style="margin-top: 10px; background: #e9ecef; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                <form action="/upload_ne?id=<?= $doc['id'] ?>" method="POST" enctype="multipart/form-data" style="display: flex; gap: 5px; align-items: center; margin: 0;">
+                                    <select name="final_status" required style="padding: 6px; font-size: 0.85em; border-radius: 3px; border: 1px solid #ccc;">
+                                        <option value="Arquivado">Arquivar</option>
+                                        <option value="Reforçado">Reforçado</option>
+                                        <option value="Anulado">Anulado</option>
+                                    </select>
+                                    <input type="file" id="ne-in-<?= $doc['id'] ?>" name="nota_empenho[]" multiple required accept=".pdf,.jpg,.jpeg,.png" style="display: none;" onchange="updateNeFileList(<?= $doc['id'] ?>, this)">
+                                    <button type="button" onclick="document.getElementById('ne-in-<?= $doc['id'] ?>').click()" style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 3px; border: none; cursor: pointer; font-size: 0.85em; font-weight: bold;">📎 Anexar NE(s)</button>
+                                    <button type="submit" id="ne-btn-<?= $doc['id'] ?>" style="background: #28a745; color: white; padding: 6px 15px; border: none; border-radius: 3px; cursor: pointer; font-size: 0.9em; font-weight: bold; display: none;">Salvar NE(s)</button>
+                                </form>
+                                <div id="ne-list-<?= $doc['id'] ?>" style="margin-top: 5px; display: flex; flex-direction: column; gap: 3px; font-size: 0.85em;"></div>
+                            </div>
                         <?php endif; ?>
                     </td>
                 </tr>
