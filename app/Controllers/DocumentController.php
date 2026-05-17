@@ -260,10 +260,22 @@ class DocumentController {
             $files = $stmtFiles->fetchAll(PDO::FETCH_ASSOC);
         }
         
+        $role = $_SESSION['role'] ?? '';
+        
+        if ($role === 'Usuário Comum') {
+            $filteredFiles = [];
+            foreach ($files as $file) {
+                if ($file['file_type'] === 'Nota de Empenho') {
+                    $filteredFiles[] = $file;
+                }
+            }
+            $files = $filteredFiles;
+        }
+        
         return [
             'doc' => $doc,
             'files' => $files,
-            'role' => $_SESSION['role'] ?? ''
+            'role' => $role
         ];
     }
 

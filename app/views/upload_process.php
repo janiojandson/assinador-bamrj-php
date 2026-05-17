@@ -83,18 +83,50 @@ $suggestedProtocol = "BAMRJ-{$dateStr}-{$randomId}";
 </div>
 
 <script>
-// 🐛 FIX: Preview de ficheiros para ambos os campos
+// 🐛 FIX: Preview de ficheiros para ambos os campos com exclusão e adição sem sobrescrever
 function setupFilePreview(inputId, listId) {
-    document.getElementById(inputId).addEventListener('change', function(e) {
-        const fileList = document.getElementById(listId);
-        fileList.innerHTML = '';
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    let dt = new DataTransfer();
+
+    input.addEventListener('change', function(e) {
         for (let i = 0; i < this.files.length; i++) {
+            dt.items.add(this.files[i]);
+        }
+        input.files = dt.files;
+        renderList();
+    });
+
+    function renderList() {
+        list.innerHTML = '';
+        for (let i = 0; i < input.files.length; i++) {
+            const file = input.files[i];
             const div = document.createElement('div');
             div.className = 'file-list-item';
-            div.innerHTML = '<span>📎 ' + this.files[i].name + ' (' + (this.files[i].size / 1024).toFixed(1) + ' KB)</span><span class="remove-file" data-input="' + inputId + '" data-index="' + i + '">✕</span>';
-            fileList.appendChild(div);
+            div.innerHTML = '<span>📎 ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)</span><span class="remove-file" data-index="' + i + '">✕</span>';
+            list.appendChild(div);
         }
-    });
+
+        const removeBtns = list.querySelectorAll('.remove-file');
+        removeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                removeFile(index);
+            });
+        });
+    }
+
+    function removeFile(index) {
+        const dtNew = new DataTransfer();
+        for (let i = 0; i < input.files.length; i++) {
+            if (i !== index) {
+                dtNew.items.add(input.files[i]);
+            }
+        }
+        dt = dtNew;
+        input.files = dt.files;
+        renderList();
+    }
 }
 
 setupFilePreview('minutasInput', 'minutasList');
