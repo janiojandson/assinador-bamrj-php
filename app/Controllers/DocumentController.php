@@ -255,7 +255,7 @@ class DocumentController {
         
         $files = [];
         if ($doc) {
-            $stmtFiles = $db->prepare("SELECT * FROM document_files WHERE document_id = ? ORDER BY file_type, id");
+            $stmtFiles = $db->prepare("SELECT * FROM document_files WHERE document_id = ? ORDER BY CASE WHEN file_type = 'Minuta' THEN 1 ELSE 2 END, id ASC");
             $stmtFiles->execute([$id]);
             $files = $stmtFiles->fetchAll(PDO::FETCH_ASSOC);
         }
