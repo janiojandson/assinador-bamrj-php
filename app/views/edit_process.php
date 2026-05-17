@@ -20,6 +20,12 @@ if (!$doc || !in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Ca
 }
 ?>
 
+<style>
+    .file-list-item { background: #ecf0f1; padding: 8px 12px; margin-top: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; border: 1px solid #bdc3c7;}
+    .remove-file { color: #e74c3c; cursor: pointer; font-weight: bold; padding: 0 5px; }
+    .remove-file:hover { color: #c0392b; }
+</style>
+
 <div class="container" style="max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #ffcc00;">
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -81,12 +87,14 @@ if (!$doc || !in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Ca
             <div style="flex: 1; background: #e2e3e5; padding: 15px; border-radius: 5px; border-left: 4px solid #17a2b8;">
                 <label><b>Anexar novas Minutas/Correções (PDF):</b></label><br>
                 <small style="color: #666;">Opcional. Junta-se aos ficheiros antigos.</small>
-                <input type="file" name="minutas[]" accept=".pdf" multiple style="margin-top:10px; width: 100%;">
+                <input type="file" name="minutas[]" id="minutasInput" accept=".pdf" multiple style="margin-top:10px; width: 100%;">
+                <div id="minutasList" style="margin-top: 10px;"></div>
             </div>
             <div style="flex: 1; background: #e2e3e5; padding: 15px; border-radius: 5px; border-left: 4px solid #6c757d;">
                 <label><b>Anexar novos Anexos (PDF):</b></label><br>
                 <small style="color: #666;">Opcional. Certidões, propostas, etc.</small>
-                <input type="file" name="anexos[]" accept=".pdf" multiple style="margin-top:10px; width: 100%;">
+                <input type="file" name="anexos[]" id="anexosInput" accept=".pdf" multiple style="margin-top:10px; width: 100%;">
+                <div id="anexosList" style="margin-top: 10px;"></div>
             </div>
         </div>
 
@@ -100,5 +108,55 @@ if (!$doc || !in_array($doc['status'], ['Devolvido - Operador', 'Arquivado', 'Ca
         </button>
     </form>
 </div>
+
+<script>
+function setupFilePreview(inputId, listId) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    let dt = new DataTransfer();
+
+    input.addEventListener('change', function(e) {
+        for (let i = 0; i < this.files.length; i++) {
+            dt.items.add(this.files[i]);
+        }
+        input.files = dt.files;
+        renderList();
+    });
+
+    function renderList() {
+        list.innerHTML = '';
+        for (let i = 0; i < input.files.length; i++) {
+            const file = input.files[i];
+            const div = document.createElement('div');
+            div.className = 'file-list-item';
+            div.innerHTML = '<span>📎 ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)</span><span class="remove-file" data-index="' + i + '">✕</span>';
+            list.appendChild(div);
+        }
+
+        const removeBtns = list.querySelectorAll('.remove-file');
+        removeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                removeFile(index);
+            });
+        });
+    }
+
+    function removeFile(index) {
+        const dtNew = new DataTransfer();
+        for (let i = 0; i < input.files.length; i++) {
+            if (i !== index) {
+                dtNew.items.add(input.files[i]);
+            }
+        }
+        dt = dtNew;
+        input.files = dt.files;
+        renderList();
+    }
+}
+
+setupFilePreview('minutasInput', 'minutasList');
+setupFilePreview('anexosInput', 'anexosList');
+</script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>

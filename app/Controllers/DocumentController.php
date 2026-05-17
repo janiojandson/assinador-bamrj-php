@@ -94,8 +94,8 @@ class DocumentController {
                 die("<script>alert('Processo não encontrado.'); history.back();</script>");
             }
             
-            // Não permite cancelar processos já finalizados
-            if (in_array($doc['status'], ['Arquivado', 'Cancelado', 'Anulado', 'Reforçado'])) {
+            // Não permite cancelar processos já finalizados (agora permite Arquivado)
+            if (in_array($doc['status'], ['Cancelado', 'Anulado', 'Reforçado'])) {
                 die("<script>alert('Este processo já está finalizado ({$doc['status']}) e não pode ser cancelado.'); history.back();</script>");
             }
             
